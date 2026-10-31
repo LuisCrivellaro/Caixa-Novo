@@ -1,0 +1,11 @@
+{
+  "name": "caixa-novo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Caixa Novo: painel interno de caixa da Mundo Novo, distribuidora de frutas em Rondonópolis.",
+  "scripts": {
+    "dev": "npx --yes serve@14 -l 5173 .",
+    "dados": "python scripts/gerar_dados.py",
+    "arquivo-unico": "python scripts/montar_arquivo_unico.py"
+  }
+}

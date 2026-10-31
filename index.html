@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caixa Novo · Mundo Novo</title>
+<meta name="description" content="Caixa Novo: painel interno de caixa da Mundo Novo, distribuidora de frutas em Rondonópolis.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;600;700&family=Red+Hat+Text:wght@400;500;600&family=Birthstone&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Pular para o conteúdo</a>
+<div class="app">
+  <aside class="side" aria-label="Navegação">
+    <a class="lockup" href="#geral" aria-label="Mundo Novo, ir para a visão geral">
+      <span class="lockup-tile"><img src="assets/img/logo-branco.png" alt="Mundo Novo"></span>
+      <span class="lockup-sub">Rondonópolis, há 35 anos</span>
+    </a>
+    <nav class="nav" aria-label="Telas do caixa">
+        <a href="#geral" data-view="geral"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><span>Visão geral</span></a>
+        <a href="#fluxo" data-view="fluxo"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0v94.37L90.73,98a8,8,0,0,1,10.07-.38l58.81,44.11L218.73,90a8,8,0,1,1,10.54,12l-64,56a8,8,0,0,1-10.07.38L96.39,114.29,40,163.63V200H224A8,8,0,0,1,232,208Z"/></svg><span>Fluxo de caixa</span></a>
+        <a href="#receber" data-view="receber"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M230.33,141.06a24.43,24.43,0,0,0-21.24-4.23l-41.84,9.62A28,28,0,0,0,140,112H89.94a31.82,31.82,0,0,0-22.63,9.37L44.69,144H16A16,16,0,0,0,0,160v40a16,16,0,0,0,16,16H120a7.93,7.93,0,0,0,1.94-.24l64-16a6.94,6.94,0,0,0,1.19-.4L226,182.82l.44-.2a24.6,24.6,0,0,0,3.93-41.56ZM16,160H40v40H16Zm203.43,8.21-38,16.18L119,200H56V155.31l22.63-22.62A15.86,15.86,0,0,1,89.94,128H140a12,12,0,0,1,0,24H112a8,8,0,0,0,0,16h32a8.32,8.32,0,0,0,1.79-.2l67-15.41.31-.08a8.6,8.6,0,0,1,6.3,15.9ZM164,96a36,36,0,0,0,5.9-.48,36,36,0,1,0,28.22-47A36,36,0,1,0,164,96Zm60-12a20,20,0,1,1-20-20A20,20,0,0,1,224,84ZM164,40a20,20,0,0,1,19.25,14.61,36,36,0,0,0-15,24.93A20.42,20.42,0,0,1,164,80a20,20,0,0,1,0-40Z"/></svg><span>A receber</span></a>
+        <a href="#pagar" data-view="pagar"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"/></svg><span>A pagar</span></a>
+        <a href="#fechamento" data-view="fechamento"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M239.76,158.06,217.28,68.12A16,16,0,0,0,201.75,56H136V40a16,16,0,0,0-16-16H80A16,16,0,0,0,64,40V56H54.25A16,16,0,0,0,38.72,68.12L16.24,158.06A7.93,7.93,0,0,0,16,160v32a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V160A7.93,7.93,0,0,0,239.76,158.06ZM80,40h40V56H80ZM54.25,72h147.5l20,80H34.25ZM32,192V168H224v24ZM64,96a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,96ZM64,128a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,128Z"/></svg><span>Fechamento</span></a><span class="nav-label">Consulta</span>
+        <a href="#lancamentos" data-view="lancamentos"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M80,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H88A8,8,0,0,1,80,64Zm136,56H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Zm0,64H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM44,52A12,12,0,1,0,56,64,12,12,0,0,0,44,52Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,116Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,180Z"/></svg><span>Lançamentos</span></a>
+        <a href="#indicadores" data-view="indicadores"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M207.06,72.67A111.24,111.24,0,0,0,128,40h-.4C66.07,40.21,16,91,16,153.13V176a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V152A111.25,111.25,0,0,0,207.06,72.67ZM224,176H119.71l54.76-75.3a8,8,0,0,0-12.94-9.42L99.92,176H32V153.13c0-3.08.15-6.12.43-9.13H56a8,8,0,0,0,0-16H35.27c10.32-38.86,44-68.24,84.73-71.66V80a8,8,0,0,0,16,0V56.33A96.14,96.14,0,0,1,221,128H200a8,8,0,0,0,0,16h23.67c.21,2.65.33,5.31.33,8Z"/></svg><span>Indicadores</span></a><span class="nav-label">Ferramentas</span>
+        <a href="#conciliacao" data-view="conciliacao"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M24,104H48v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16H208V104h24a8,8,0,0,0,4.19-14.81l-104-64a8,8,0,0,0-8.38,0l-104,64A8,8,0,0,0,24,104Zm40,0H96v64H64Zm80,0v64H112V104Zm48,64H160V104h32ZM128,41.39,203.74,88H52.26ZM248,208a8,8,0,0,1-8,8H16a8,8,0,0,1,0-16H240A8,8,0,0,1,248,208Z"/></svg><span>Conciliação</span></a>
+        <a href="#dados" data-view="dados"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1-11.32,11.32L136,139.31V184a8,8,0,0,1-16,0V139.31l-10.34,10.35a8,8,0,0,1-11.32-11.32l24-24a8,8,0,0,1,11.32,0Z"/></svg><span>Importar dados</span></a>
+      </nav>
+    <div class="side-foot">
+      <span><b>Caixa Novo</b><br>Dono e financeiro</span>
+      <span>Dados de exemplo enquanto a fonte real não é definida.</span>
+      <div class="theme" role="group" aria-label="Tema">
+        <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
+        <button type="button" data-theme-set="light" aria-pressed="false">Claro</button>
+        <button type="button" data-theme-set="dark" aria-pressed="false">Escuro</button>
+      </div>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <span class="mark"><img src="assets/img/logo-branco.png" alt="Mundo Novo"></span>
+    <span class="where" id="where">Visão geral</span>
+    <button type="button" class="menu" id="menu-open" aria-label="Abrir menu" aria-expanded="false" aria-controls="sheet"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/></svg></button>
+  </header>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Menu" inert>
+    <div class="sheet-top">
+      <span class="lockup-tile" style="width:160px"><img src="assets/img/logo-branco.png" alt="Mundo Novo"></span>
+      <button type="button" class="menu btn btn-ghost" id="menu-close" aria-label="Fechar menu"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
+    </div>
+    <nav class="nav" aria-label="Telas do caixa">
+        <a href="#geral" data-view="geral"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><span>Visão geral</span></a>
+        <a href="#fluxo" data-view="fluxo"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0v94.37L90.73,98a8,8,0,0,1,10.07-.38l58.81,44.11L218.73,90a8,8,0,1,1,10.54,12l-64,56a8,8,0,0,1-10.07.38L96.39,114.29,40,163.63V200H224A8,8,0,0,1,232,208Z"/></svg><span>Fluxo de caixa</span></a>
+        <a href="#receber" data-view="receber"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M230.33,141.06a24.43,24.43,0,0,0-21.24-4.23l-41.84,9.62A28,28,0,0,0,140,112H89.94a31.82,31.82,0,0,0-22.63,9.37L44.69,144H16A16,16,0,0,0,0,160v40a16,16,0,0,0,16,16H120a7.93,7.93,0,0,0,1.94-.24l64-16a6.94,6.94,0,0,0,1.19-.4L226,182.82l.44-.2a24.6,24.6,0,0,0,3.93-41.56ZM16,160H40v40H16Zm203.43,8.21-38,16.18L119,200H56V155.31l22.63-22.62A15.86,15.86,0,0,1,89.94,128H140a12,12,0,0,1,0,24H112a8,8,0,0,0,0,16h32a8.32,8.32,0,0,0,1.79-.2l67-15.41.31-.08a8.6,8.6,0,0,1,6.3,15.9ZM164,96a36,36,0,0,0,5.9-.48,36,36,0,1,0,28.22-47A36,36,0,1,0,164,96Zm60-12a20,20,0,1,1-20-20A20,20,0,0,1,224,84ZM164,40a20,20,0,0,1,19.25,14.61,36,36,0,0,0-15,24.93A20.42,20.42,0,0,1,164,80a20,20,0,0,1,0-40Z"/></svg><span>A receber</span></a>
+        <a href="#pagar" data-view="pagar"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"/></svg><span>A pagar</span></a>
+        <a href="#fechamento" data-view="fechamento"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M239.76,158.06,217.28,68.12A16,16,0,0,0,201.75,56H136V40a16,16,0,0,0-16-16H80A16,16,0,0,0,64,40V56H54.25A16,16,0,0,0,38.72,68.12L16.24,158.06A7.93,7.93,0,0,0,16,160v32a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V160A7.93,7.93,0,0,0,239.76,158.06ZM80,40h40V56H80ZM54.25,72h147.5l20,80H34.25ZM32,192V168H224v24ZM64,96a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,96ZM64,128a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,128Z"/></svg><span>Fechamento</span></a><span class="nav-label">Consulta</span>
+        <a href="#lancamentos" data-view="lancamentos"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M80,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H88A8,8,0,0,1,80,64Zm136,56H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Zm0,64H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM44,52A12,12,0,1,0,56,64,12,12,0,0,0,44,52Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,116Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,180Z"/></svg><span>Lançamentos</span></a>
+        <a href="#indicadores" data-view="indicadores"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M207.06,72.67A111.24,111.24,0,0,0,128,40h-.4C66.07,40.21,16,91,16,153.13V176a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V152A111.25,111.25,0,0,0,207.06,72.67ZM224,176H119.71l54.76-75.3a8,8,0,0,0-12.94-9.42L99.92,176H32V153.13c0-3.08.15-6.12.43-9.13H56a8,8,0,0,0,0-16H35.27c10.32-38.86,44-68.24,84.73-71.66V80a8,8,0,0,0,16,0V56.33A96.14,96.14,0,0,1,221,128H200a8,8,0,0,0,0,16h23.67c.21,2.65.33,5.31.33,8Z"/></svg><span>Indicadores</span></a><span class="nav-label">Ferramentas</span>
+        <a href="#conciliacao" data-view="conciliacao"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M24,104H48v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16H208V104h24a8,8,0,0,0,4.19-14.81l-104-64a8,8,0,0,0-8.38,0l-104,64A8,8,0,0,0,24,104Zm40,0H96v64H64Zm80,0v64H112V104Zm48,64H160V104h32ZM128,41.39,203.74,88H52.26ZM248,208a8,8,0,0,1-8,8H16a8,8,0,0,1,0-16H240A8,8,0,0,1,248,208Z"/></svg><span>Conciliação</span></a>
+        <a href="#dados" data-view="dados"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1-11.32,11.32L136,139.31V184a8,8,0,0,1-16,0V139.31l-10.34,10.35a8,8,0,0,1-11.32-11.32l24-24a8,8,0,0,1,11.32,0Z"/></svg><span>Importar dados</span></a>
+      </nav>
+    <div class="theme" role="group" aria-label="Tema">
+      <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
+      <button type="button" data-theme-set="light" aria-pressed="false">Claro</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Escuro</button>
+    </div>
+  </div>
+
+  <main id="main" tabindex="-1">
+
+    <section class="view" id="geral" aria-labelledby="h-geral">
+      <div class="title-row">
+        <div>
+          <h1 id="h-geral">Visão geral</h1>
+          <p class="finding" id="g-finding"></p>
+        </div>
+        <div class="actions">
+          <span class="stamp" id="g-stamp"></span>
+          <button type="button" class="btn btn-ghost" id="g-resumo-abrir" aria-expanded="false" aria-controls="g-resumo"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/></svg>Resumo do dia</button>
+          <a class="btn btn-primary" href="#receber/vencidos">Ver títulos vencidos</a>
+        </div>
+      </div>
+      <article class="card" id="g-resumo" hidden>
+        <div class="card-head"><h2>Resumo do dia para enviar</h2><span class="meta">Texto pronto para mandar ao dono no fim do dia</span></div>
+        <textarea class="resumo" id="g-resumo-txt" rows="9" readonly aria-label="Texto do resumo do dia"></textarea>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="g-resumo-copiar"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/></svg>Copiar texto</button>
+          <a class="btn btn-ghost" id="g-resumo-whats" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M187.58,144.84l-32-16a8,8,0,0,0-8,.5l-14.69,9.8a40.55,40.55,0,0,1-16-16l9.8-14.69a8,8,0,0,0,.5-8l-16-32A8,8,0,0,0,104,64a40,40,0,0,0-40,40,88.1,88.1,0,0,0,88,88,40,40,0,0,0,40-40A8,8,0,0,0,187.58,144.84ZM152,176a72.08,72.08,0,0,1-72-72A24,24,0,0,1,99.29,80.46l11.48,23L101,118a8,8,0,0,0-.73,7.51,56.47,56.47,0,0,0,30.15,30.15A8,8,0,0,0,138,155l14.61-9.74,23,11.48A24,24,0,0,1,152,176ZM128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm0,192a87.87,87.87,0,0,1-44.06-11.81,8,8,0,0,0-6.54-.67L40,216,52.47,178.6a8,8,0,0,0-.66-6.54A88,88,0,1,1,128,216Z"/></svg>Abrir no WhatsApp</a>
+          <button type="button" class="btn btn-text" id="g-resumo-fechar">Fechar</button>
+          <span class="stamp" id="g-resumo-status" role="status" aria-live="polite"></span>
+        </div>
+      </article>
+      <div class="strip" style="--n:6" id="g-strip"></div>
+      <div class="cols cols-2-1">
+        <article class="card" id="g-chart-card">
+          <div class="ktabs" role="tablist" aria-label="Gráfico">
+            <button type="button" class="ktab" role="tab" id="kt-saldo" aria-selected="true" aria-controls="g-chart"><span class="kpi-label">Saldo projetado em 30 dias</span><span class="kpi-value" id="kt-saldo-v">—</span></button>
+            <button type="button" class="ktab" role="tab" id="kt-fluxo" aria-selected="false" aria-controls="g-chart"><span class="kpi-label">Resultado de caixa no mês, até hoje</span><span class="kpi-value" id="kt-fluxo-v">—</span></button>
+          </div>
+          <div class="card-head plain"><p id="g-chart-note"></p><div class="chart-legend" id="g-chart-legend"></div></div>
+          <div class="chart" id="g-chart" role="tabpanel" aria-labelledby="kt-saldo"></div>
+        </article>
+        <div class="stack">
+          <article class="card" id="g-alertas">
+            <div class="card-head"><h2>Alertas</h2><span class="meta">O que pede atenção hoje</span></div>
+            <ul class="alerts" id="g-alerts"></ul>
+          </article>
+          <article class="card" id="g-prazos">
+            <div class="card-head"><h2>Prazos médios</h2><span class="meta">Títulos dos últimos 90 dias</span></div>
+            <dl class="kv" id="g-prazos-kv"></dl>
+            <p class="card-note">Diferença positiva quer dizer que o dinheiro dos clientes entra depois que os produtores já foram pagos.</p>
+          </article>
+        </div>
+      </div>
+      <article class="card" id="g-venc">
+        <div class="card-head"><h2>Vence nos próximos 7 dias</h2><span class="meta">Os maiores títulos de cada lado, em ordem de data</span></div>
+        <div class="split">
+          <section aria-labelledby="g-rec-h"><h3 id="g-rec-h">A receber <span id="g-rec-total"></span></h3><ul class="list" id="g-rec-list"></ul></section>
+          <section aria-labelledby="g-pag-h"><h3 id="g-pag-h">A pagar <span id="g-pag-total"></span></h3><ul class="list" id="g-pag-list"></ul></section>
+        </div>
+        <div class="card-foot"><a class="btn btn-text" href="#receber">Ver a carteira a receber</a><a class="btn btn-text" href="#pagar">Ver todos os títulos a pagar</a></div>
+      </article>
+    </section>
+
+    <section class="view" id="fluxo" aria-labelledby="h-fluxo" hidden>
+      <div class="title-row">
+        <div>
+          <h1 id="h-fluxo">Fluxo de caixa</h1>
+          <p class="finding" id="f-finding"></p>
+        </div>
+        <div class="seg" role="group" aria-label="Agrupar por">
+          <button type="button" data-grao="dia" aria-pressed="false">Dia</button>
+          <button type="button" data-grao="semana" aria-pressed="true">Semana</button>
+          <button type="button" data-grao="mes" aria-pressed="false">Mês</button>
+        </div>
+      </div>
+      <article class="card">
+        <div class="card-head"><h2>Entradas e saídas, realizado e previsto</h2><div class="chart-legend" id="f-legend"></div></div>
+        <div class="chart" id="f-chart" style="min-height:280px"></div>
+        <p class="card-note">O previsto vem dos títulos em aberto a receber e a pagar nos próximos 60 dias. Vendas que ainda vão acontecer não entram.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><h2>Por categoria</h2><span class="meta">Mês atual até hoje e mês anterior inteiro</span></div>
+        <div class="tbl-wrap short">
+          <table aria-label="Entradas e saídas por categoria">
+            <thead><tr><th>Categoria</th><th class="num">Mês atual</th><th class="num">Mês anterior</th><th class="num hide-sm">Variação</th></tr></thead>
+            <tbody id="f-cat"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="view" id="receber" aria-labelledby="h-receber" hidden>
+      <div class="title-row">
+        <div>
+          <h1 id="h-receber">A receber</h1>
+          <p class="finding" id="r-finding"></p>
+        </div>
+      </div>
+      <div class="strip" style="--n:4" id="r-strip"></div>
+      <div class="cols">
+        <article class="card">
+          <div class="card-head"><h2>Idade da carteira</h2><span class="meta">Valor em aberto por dias de atraso</span></div>
+          <div id="r-aging"></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><h2>Em aberto por forma de pagamento</h2></div>
+          <div id="r-forma"></div>
+        </article>
+      </div>
+      <article class="card" id="r-notas">
+        <div class="card-head"><h2>Nota de pagador</h2><span class="meta">Títulos vencidos nos últimos 180 dias, sem cartão</span></div>
+        <div class="notas" id="r-notas-grid"></div>
+        <p class="card-note">Paga em dia: 90% ou mais dos títulos pagos até 2 dias depois do vencimento e nenhum atraso acima de 15 dias. Costuma atrasar: menos de 75% em dia com atraso médio de 5 dias ou mais, ou algum atraso acima de 60 dias. Sem histórico: menos de 3 títulos no período.</p>
+      </article>
+      <article class="card" id="r-clientes">
+        <div class="card-head"><h2>Clientes com saldo em aberto</h2><span class="meta" id="r-cli-meta"></span></div>
+        <div class="filters">
+          <label class="field field-grow"><span>Buscar cliente</span><span class="search"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg><input class="input" id="r-q" type="search" placeholder="Nome do cliente, vendedor ou rota"></span></label>
+          <label class="field"><span>Nota</span><select class="select" id="r-nota"><option value="">Todas as notas</option><option>Paga em dia</option><option>Atrasa às vezes</option><option>Costuma atrasar</option><option>Sem histórico</option></select></label>
+          <label class="check"><input type="checkbox" id="r-only">Só com valor vencido</label>
+        </div>
+        <div class="tbl-wrap">
+          <table aria-label="Clientes com saldo em aberto">
+            <thead><tr><th>Cliente</th><th class="hide-sm"><button type="button" class="sort" data-sort="nota_ordem">Nota</button></th><th class="num"><button type="button" class="sort" data-sort="vencido">Vencido</button></th><th class="num hide-sm"><button type="button" class="sort" data-sort="maior_atraso">Maior atraso</button></th><th class="num"><button type="button" class="sort" data-sort="a_vencer">A vencer</button></th><th class="num"><button type="button" class="sort" data-sort="uso_limite">Limite usado</button></th></tr></thead>
+            <tbody id="r-cli"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="r-cli-empty" hidden>Nenhum cliente com estes filtros. Limpe a busca para ver todos.</p>
+        <div class="more card-foot"><button type="button" class="btn btn-ghost" id="r-cli-more" hidden>Mostrar todos</button></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><h2>Recebido no mês</h2><span class="meta">Vendas à vista, boletos, cheques e repasses de cartão</span></div>
+        <div class="split">
+          <section aria-labelledby="r-vend-h"><h3 id="r-vend-h">Por vendedor</h3><div id="r-vend"></div></section>
+          <section aria-labelledby="r-rota-h"><h3 id="r-rota-h">Por rota de entrega</h3><div id="r-rota"></div></section>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card-head"><h2>Cartão a receber</h2><span class="meta">Repasses por adquirente e data, já sem a taxa</span></div>
+        <div class="tbl-wrap short">
+          <table aria-label="Cartão a receber">
+            <thead><tr><th>Liquidação</th><th>Adquirente</th><th class="num">Vendas</th><th class="num">Valor</th></tr></thead>
+            <tbody id="r-cartao"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="r-cartao-empty" hidden>Nenhum repasse de cartão pendente.</p>
+        <div class="more card-foot"><button type="button" class="btn btn-ghost" id="r-cartao-more" hidden>Mostrar todos</button></div>
+      </article>
+    </section>
+
+    <section class="view" id="pagar" aria-labelledby="h-pagar" hidden>
+      <div class="title-row">
+        <div>
+          <h1 id="h-pagar">A pagar</h1>
+          <p class="finding" id="p-finding"></p>
+        </div>
+      </div>
+      <div class="strip" style="--n:4" id="p-strip"></div>
+      <div class="cols cols-3-2">
+        <article class="card">
+          <div class="card-head"><h2>Calendário de pagamentos</h2><span class="meta">Quanto mais forte o vermelho, maior o valor que sai no dia</span></div>
+          <div class="cal-head" aria-hidden="true"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
+          <div class="cal" id="p-cal"></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><h2>Próximos 30 dias por categoria</h2></div>
+          <div id="p-cat"></div>
+        </article>
+      </div>
+      <article class="card">
+        <div class="card-head"><h2>Títulos a pagar em aberto</h2><span class="meta" id="p-abertos-meta"></span></div>
+        <div class="tbl-wrap">
+          <table aria-label="Títulos a pagar em aberto">
+            <thead><tr><th>Vencimento</th><th>Fornecedor</th><th class="hide-sm">Categoria</th><th class="num">A pagar</th></tr></thead>
+            <tbody id="p-abertos"></tbody>
+          </table>
+        </div>
+        <div class="more card-foot"><button type="button" class="btn btn-ghost" id="p-more" hidden>Mostrar todos</button></div>
+        <p class="card-note">A baixa de pagamento entra junto com o lançamento manual, na próxima fase.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><h2>Abatimentos de produtores</h2><span class="meta">Títulos dos últimos 90 dias com desconto</span></div>
+        <div class="tbl-wrap short">
+          <table aria-label="Abatimentos de produtores">
+            <thead><tr><th>Vencimento</th><th>Produtor</th><th>Motivo</th><th class="hide-sm">Situação</th><th class="num">Abatimento</th></tr></thead>
+            <tbody id="p-abat"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="p-abat-empty" hidden>Nenhum abatimento nos últimos 90 dias.</p>
+      </article>
+    </section>
+
+    <section class="view" id="fechamento" aria-labelledby="h-fechamento" hidden>
+      <div class="title-row">
+        <div>
+          <h1 id="h-fechamento">Fechamento de caixa</h1>
+          <p class="finding" id="c-finding"></p>
+        </div>
+        <label class="field"><span>Dia</span><select class="select" id="c-dia"></select></label>
+      </div>
+      <article class="card">
+        <div class="card-head"><h2>Diferença de gaveta nos últimos 30 fechamentos</h2><div class="chart-legend" id="c-legend"></div></div>
+        <div class="chart" id="c-chart"></div>
+        <p class="card-note">Contado menos esperado. Zero quer dizer que a gaveta fechou certa.</p>
+      </article>
+      <div class="cols cols-1-2">
+        <article class="card">
+          <div class="card-head"><h2 id="c-dia-title">Gaveta do dia</h2><span class="meta" id="c-resp"></span></div>
+          <div class="tbl-wrap short">
+            <table aria-label="Fechamento do dia">
+              <thead><tr><th>Item</th><th class="num">Valor</th></tr></thead>
+              <tbody id="c-itens"></tbody>
+            </table>
+          </div>
+          <p class="card-note card-foot">Esperado na gaveta é abertura mais suprimentos, dinheiro do balcão e acerto dos motoristas, menos sangrias. Pix, cartão, boleto e cheque não passam pela gaveta.</p>
+        </article>
+        <article class="card">
+          <div class="card-head"><h2>Fechamentos</h2><span class="meta">Do mais recente para o mais antigo</span></div>
+          <div class="tbl-wrap" style="max-height:620px">
+            <table aria-label="Fechamentos">
+              <thead><tr><th>Dia</th><th class="hide-sm">Responsável</th><th class="num">Esperado</th><th class="num">Contado</th><th class="num">Diferença</th></tr></thead>
+              <tbody id="c-lista"></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="view" id="lancamentos" aria-labelledby="h-lancamentos" hidden>
+      <div class="title-row">
+        <div>
+          <h1 id="h-lancamentos">Lançamentos</h1>
+          <p class="finding">Tudo o que entrou e saiu nos últimos 90 dias, por conta, categoria e forma de pagamento.</p>
+        </div>
+      </div>
+      <article class="card">
+        <div class="card-head"><h2>Lançamentos realizados</h2><span class="meta" id="l-meta"></span></div>
+        <div class="filters">
+          <label class="field field-grow"><span>Buscar</span><span class="search"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg><input class="input" id="l-q" type="search" placeholder="Descrição, cliente ou produtor"></span></label>
+          <label class="field"><span>Tipo</span><select class="select" id="l-tipo"><option value="">Entradas e saídas</option><option value="entrada">Só entradas</option><option value="saida">Só saídas</option></select></label>
+          <label class="field"><span>Categoria</span><select class="select" data-col="categoria" data-all="Todas as categorias"></select></label>
+          <label class="field"><span>Conta</span><select class="select" data-col="conta" data-all="Todas as contas"></select></label>
+          <label class="field"><span>Forma</span><select class="select" data-col="forma" data-all="Todas as formas"></select></label>
+          <label class="field"><span>Vendedor</span><select class="select" data-col="vendedor" data-all="Todos os vendedores"></select></label>
+          <label class="field"><span>Rota</span><select class="select" data-col="rota" data-all="Todas as rotas"></select></label>
+          <label class="field"><span>De</span><input class="input" type="date" id="l-de"></label>
+          <label class="field"><span>Até</span><input class="input" type="date" id="l-ate"></label>
+          <button type="button" class="btn btn-ghost" id="l-clear">Limpar filtros</button>
+        </div>
+        <p class="count-line" id="l-count"></p>
+        <div class="tbl-wrap">
+          <table aria-label="Lançamentos">
+            <thead><tr>
+              <th aria-sort="descending"><button type="button" class="sort" data-sort="data">Data</button></th>
+              <th><button type="button" class="sort" data-sort="descricao">Descrição</button></th>
+              <th class="hide-sm"><button type="button" class="sort" data-sort="categoria">Categoria</button></th>
+              <th class="hide-sm"><button type="button" class="sort" data-sort="conta">Conta</button></th>
+              <th class="num"><button type="button" class="sort" data-sort="valor">Valor</button></th>
+            </tr></thead>
+            <tbody id="l-body"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="l-empty" hidden>Nenhum lançamento com estes filtros. Use Limpar filtros para ver todos.</p>
+        <div class="more card-foot"><button type="button" class="btn btn-ghost" id="l-more" hidden>Mostrar mais 50</button></div>
+      </article>
+    </section>
+
+    <section class="view" id="indicadores" aria-labelledby="h-indicadores" hidden>
+      <div class="title-row">
+        <div>
+          <h1 id="h-indicadores">Indicadores</h1>
+          <p class="finding" id="i-finding"></p>
+        </div>
+      </div>
+      <div class="strip" style="--n:4" id="i-strip-1"></div>
+      <div class="strip" style="--n:4" id="i-strip-2"></div>
+      <article class="card">
+        <div class="card-head"><h2>Despesas operacionais em 30 dias</h2><span class="meta">Saídas realizadas por categoria, sem a compra de frutas</span></div>
+        <div id="i-desp"></div>
+      </article>
+    </section>
+
+    <section class="view" id="conciliacao" aria-labelledby="h-conciliacao" hidden>
+      <div class="title-row">
+        <div>
+          <h1 id="h-conciliacao">Conciliação bancária</h1>
+          <p class="finding" id="cc-finding">Importe o extrato de uma conta e o painel confere cada linha com os lançamentos: o que bateu, o que só está no banco e o que só está no sistema.</p>
+        </div>
+      </div>
+      <article class="card">
+        <div class="card-head"><h2>Extrato</h2><span class="meta">OFX, CSV ou Excel exportado do banco</span></div>
+        <div class="filters">
+          <label class="field"><span>Conta</span><select class="select" id="cc-conta"></select></label>
+          <button type="button" class="btn btn-primary" id="cc-importar"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/></svg>Importar extrato</button>
+          <button type="button" class="btn btn-ghost" id="cc-exemplo">Usar extrato de exemplo</button>
+          <input type="file" id="cc-file" accept=".ofx,.csv,.txt,.xlsx,.xls" hidden>
+          <span class="stamp" id="cc-status" role="status" aria-live="polite"></span>
+        </div>
+        <p class="card-note">Um lançamento bate com uma linha do extrato quando o valor é igual ao centavo e a data fica a até 3 dias de diferença. Cada lançamento bate com uma linha só.</p>
+      </article>
+      <div id="cc-map"></div>
+      <div id="cc-result" hidden>
+        <div class="strip" style="--n:4" id="cc-strip"></div>
+        <article class="card">
+          <div class="card-head"><h2 id="cc-tab-title">Linhas conferidas</h2>
+            <div class="seg" role="group" aria-label="Mostrar">
+              <button type="button" data-cc="todas" aria-pressed="false">Todas</button>
+              <button type="button" data-cc="extrato" aria-pressed="true">Só no extrato</button>
+              <button type="button" data-cc="sistema" aria-pressed="false">Só no sistema</button>
+              <button type="button" data-cc="batido" aria-pressed="false">Batidas</button>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table aria-label="Conciliação">
+              <thead><tr><th>Data</th><th>No extrato</th><th class="hide-sm">No sistema</th><th>Situação</th><th class="num">Valor</th></tr></thead>
+              <tbody id="cc-body"></tbody>
+            </table>
+          </div>
+          <p class="empty" id="cc-empty" hidden>Nenhuma linha nesta situação.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="view" id="dados" aria-labelledby="h-dados" hidden>
+      <div class="title-row">
+        <div>
+          <h1 id="h-dados">Importar dados</h1>
+          <p class="finding" id="d-finding"></p>
+        </div>
+      </div>
+      <article class="card">
+        <div class="card-head"><h2>Fontes do painel</h2><span class="meta">Excel ou CSV, uma linha por registro, com cabeçalho</span></div>
+        <div class="tbl-wrap short">
+          <table aria-label="Fontes do painel">
+            <thead><tr><th>Fonte</th><th class="hide-sm">O que é cada linha</th><th>Origem</th><th class="num">Linhas</th><th class="num">Ações</th></tr></thead>
+            <tbody id="d-fontes"></tbody>
+          </table>
+        </div>
+        <input type="file" id="d-file" accept=".csv,.txt,.xlsx,.xls" hidden>
+        <p class="card-note">Os dados importados ficam guardados só neste navegador, neste computador. Use o mesmo código de cliente nas planilhas de clientes e de contas a receber. Compras de produtores devem usar a categoria "Compra de frutas" para entrar no prazo médio de pagamento e na margem.</p>
+      </article>
+      <div id="d-map"></div>
+    </section>
+  </main>
+</div>
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/calculos.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
