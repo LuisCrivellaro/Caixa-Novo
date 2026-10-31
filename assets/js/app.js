@@ -1,4 +1,4 @@
-// Caixa Novo (Mundo Novo): telas, rotas (#geral, #fluxo, #receber, #pagar, #fechamento, #lancamentos, #indicadores) e controles.
+// Caixa Novo (Mundo Novo): telas, rotas e controles. As telas leem os resultados de calculos.js; nada aqui grava dados fora do navegador.
 (async () => {
   'use strict';
   // Fontes de dados: hoje são os arquivos de exemplo em dados/. Para usar dados reais, troque só esta carga.
@@ -14,7 +14,8 @@
   } catch (e) {
     console.error(e);
     const m = document.getElementById('main');
-    m.replaceChildren(Object.assign(document.createElement('p'), { className: 'err', textContent: 'Não foi possível carregar os dados. Abra o projeto por um servidor local (veja o README) em vez de abrir o arquivo direto.' }));
+    m.removeAttribute('aria-busy');
+    m.replaceChildren(Object.assign(document.createElement('p'), { className: 'err', role: 'alert', textContent: `Os dados não carregaram (${e.message}). Abra o projeto por um servidor local, como explica o README, em vez de abrir o arquivo direto.` }));
     return;
   }
   const EXEMPLO = { ...DATA };
@@ -87,6 +88,7 @@
   };
   const ICON = {"house": "<path d=\"M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z\"/>", "chart-line": "<path d=\"M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0v94.37L90.73,98a8,8,0,0,1,10.07-.38l58.81,44.11L218.73,90a8,8,0,1,1,10.54,12l-64,56a8,8,0,0,1-10.07.38L96.39,114.29,40,163.63V200H224A8,8,0,0,1,232,208Z\"/>", "hand-coins": "<path d=\"M230.33,141.06a24.43,24.43,0,0,0-21.24-4.23l-41.84,9.62A28,28,0,0,0,140,112H89.94a31.82,31.82,0,0,0-22.63,9.37L44.69,144H16A16,16,0,0,0,0,160v40a16,16,0,0,0,16,16H120a7.93,7.93,0,0,0,1.94-.24l64-16a6.94,6.94,0,0,0,1.19-.4L226,182.82l.44-.2a24.6,24.6,0,0,0,3.93-41.56ZM16,160H40v40H16Zm203.43,8.21-38,16.18L119,200H56V155.31l22.63-22.62A15.86,15.86,0,0,1,89.94,128H140a12,12,0,0,1,0,24H112a8,8,0,0,0,0,16h32a8.32,8.32,0,0,0,1.79-.2l67-15.41.31-.08a8.6,8.6,0,0,1,6.3,15.9ZM164,96a36,36,0,0,0,5.9-.48,36,36,0,1,0,28.22-47A36,36,0,1,0,164,96Zm60-12a20,20,0,1,1-20-20A20,20,0,0,1,224,84ZM164,40a20,20,0,0,1,19.25,14.61,36,36,0,0,0-15,24.93A20.42,20.42,0,0,1,164,80a20,20,0,0,1,0-40Z\"/>", "receipt": "<path d=\"M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z\"/>", "cash-register": "<path d=\"M239.76,158.06,217.28,68.12A16,16,0,0,0,201.75,56H136V40a16,16,0,0,0-16-16H80A16,16,0,0,0,64,40V56H54.25A16,16,0,0,0,38.72,68.12L16.24,158.06A7.93,7.93,0,0,0,16,160v32a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V160A7.93,7.93,0,0,0,239.76,158.06ZM80,40h40V56H80ZM54.25,72h147.5l20,80H34.25ZM32,192V168H224v24ZM64,96a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,96ZM64,128a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,128Z\"/>", "list-bullets": "<path d=\"M80,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H88A8,8,0,0,1,80,64Zm136,56H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Zm0,64H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM44,52A12,12,0,1,0,56,64,12,12,0,0,0,44,52Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,116Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,180Z\"/>", "gauge": "<path d=\"M207.06,72.67A111.24,111.24,0,0,0,128,40h-.4C66.07,40.21,16,91,16,153.13V176a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V152A111.25,111.25,0,0,0,207.06,72.67ZM224,176H119.71l54.76-75.3a8,8,0,0,0-12.94-9.42L99.92,176H32V153.13c0-3.08.15-6.12.43-9.13H56a8,8,0,0,0,0-16H35.27c10.32-38.86,44-68.24,84.73-71.66V80a8,8,0,0,0,16,0V56.33A96.14,96.14,0,0,1,221,128H200a8,8,0,0,0,0,16h23.67c.21,2.65.33,5.31.33,8Z\"/>", "list": "<path d=\"M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z\"/>", "x": "<path d=\"M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z\"/>", "magnifying-glass": "<path d=\"M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z\"/>", "warning-circle": "<path d=\"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z\"/>", "check-circle": "<path d=\"M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z\"/>", "arrow-right": "<path d=\"M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z\"/>"};
   Object.assign(ICON, {"bank": "<path d=\"M24,104H48v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16H208V104h24a8,8,0,0,0,4.19-14.81l-104-64a8,8,0,0,0-8.38,0l-104,64A8,8,0,0,0,24,104Zm40,0H96v64H64Zm80,0v64H112V104Zm48,64H160V104h32ZM128,41.39,203.74,88H52.26ZM248,208a8,8,0,0,1-8,8H16a8,8,0,0,1,0-16H240A8,8,0,0,1,248,208Z\"/>", "upload-simple": "<path d=\"M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z\"/>", "copy": "<path d=\"M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z\"/>", "whatsapp-logo": "<path d=\"M187.58,144.84l-32-16a8,8,0,0,0-8,.5l-14.69,9.8a40.55,40.55,0,0,1-16-16l9.8-14.69a8,8,0,0,0,.5-8l-16-32A8,8,0,0,0,104,64a40,40,0,0,0-40,40,88.1,88.1,0,0,0,88,88,40,40,0,0,0,40-40A8,8,0,0,0,187.58,144.84ZM152,176a72.08,72.08,0,0,1-72-72A24,24,0,0,1,99.29,80.46l11.48,23L101,118a8,8,0,0,0-.73,7.51,56.47,56.47,0,0,0,30.15,30.15A8,8,0,0,0,138,155l14.61-9.74,23,11.48A24,24,0,0,1,152,176ZM128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm0,192a87.87,87.87,0,0,1-44.06-11.81,8,8,0,0,0-6.54-.67L40,216,52.47,178.6a8,8,0,0,0-.66-6.54A88,88,0,1,1,128,216Z\"/>", "arrows-left-right": "<path d=\"M213.66,181.66l-32,32a8,8,0,0,1-11.32-11.32L188.69,184H48a8,8,0,0,1,0-16H188.69l-18.35-18.34a8,8,0,0,1,11.32-11.32l32,32A8,8,0,0,1,213.66,181.66Zm-139.32-64a8,8,0,0,0,11.32-11.32L67.31,88H208a8,8,0,0,0,0-16H67.31L85.66,53.66A8,8,0,0,0,74.34,42.34l-32,32a8,8,0,0,0,0,11.32Z\"/>", "file-arrow-up": "<path d=\"M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1-11.32,11.32L136,139.31V184a8,8,0,0,1-16,0V139.31l-10.34,10.35a8,8,0,0,1-11.32-11.32l24-24a8,8,0,0,1,11.32,0Z\"/>"});
+  Object.assign(ICON, {"wallet": "<path d=\"M216,64H56a8,8,0,0,1,0-16H192a8,8,0,0,0,0-16H56A24,24,0,0,0,32,56V184a24,24,0,0,0,24,24H216a16,16,0,0,0,16-16V80A16,16,0,0,0,216,64Zm0,128H56a8,8,0,0,1-8-8V78.63A23.84,23.84,0,0,0,56,80H216Zm-48-60a12,12,0,1,1,12,12A12,12,0,0,1,168,132Z\"/>", "users-three": "<path d=\"M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.84,8,57,57,0,0,0-98.16,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z\"/>", "file-text": "<path d=\"M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z\"/>", "download-simple": "<path d=\"M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z\"/>"});
   const icon = (name) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 256 256'); s.setAttribute('aria-hidden', 'true'); s.innerHTML = ICON[name]; return s; };
   const fmtC = (v) => brlC(v);
 
@@ -117,6 +119,15 @@
     $('#g-strip').replaceChildren(
       kpi('Saldo disponível hoje', brl(R(res, 'saldo_disponivel')), 'Caixa da loja, bancos e aplicação', { lead: true, cls: sinal(R(res, 'saldo_disponivel')) }),
       ...contas.map((c) => kpi(c.conta, brl(c.saldo), c.tipo, { cls: c.saldo === 0 ? 'zero' : sinal(c.saldo) })));
+
+    const vE = R(res, 'variacao_entradas'), vS = R(res, 'variacao_saidas');
+    const mesAnt = MESES[(Number(HOJE.slice(5, 7)) + 10) % 12];
+    const compara = (v) => (v == null ? `Sem movimento no mesmo período de ${mesAnt}` : `${pctS(v)} sobre o mesmo período de ${mesAnt}`);
+    $('#g-strip-2').replaceChildren(
+      kpi('Entradas no mês, até hoje', brlS(R(res, 'entradas_mes')), compara(vE), { cls: sinal(R(res, 'entradas_mes')) }),
+      kpi('Saídas no mês, até hoje', brlS(-R(res, 'saidas_mes')), compara(vS), { cls: sinal(-R(res, 'saidas_mes')) }),
+      kpi('A receber em aberto', brl(R(res, 'receber_aberto')), h('span', { class: 'kpi-sub' }, R(res, 'vencidos_valor') > 0 ? h('span', { class: 'neg', text: brl(R(res, 'vencidos_valor')) }) : brl(0), ' já vencidos'), { cls: sinal(R(res, 'receber_aberto')) }),
+      kpi('A pagar em aberto', brlS(-R(res, 'pagar_aberto')), `${brl(R(res, 'pagar_7_dias'))} vencem em 7 dias`, { cls: sinal(-R(res, 'pagar_aberto')) }));
 
     const p30 = marcos.find((m) => m.marco === '30');
     $('#kt-saldo-v').textContent = brl(p30.saldo);
@@ -173,7 +184,7 @@
         Charts.line(el, {
           labels: proj.map((r) => dCurta(r.dia)),
           series: [{ name: 'Saldo projetado', values: proj.map((r) => r.saldo), colour: cv('--positive') }],
-          format: brl, tickFormat: fmtC, height: 230, today: 0, todayLabel: 'Hoje', endLabel: true, negColour: cv('--negative'),
+          format: brl, tickFormat: fmtC, height: 300, today: 0, todayLabel: 'Hoje', endLabel: true, negColour: cv('--negative'),
           reference: { value: minimo, label: 'Mínimo ' + brlC(minimo) },
           annotations: proj[maxDia].saidas > 0 ? [{ at: maxDia, label: `Maior saída: ${brlC(proj[maxDia].saidas)} em ${dCurta(proj[maxDia].dia)}`, short: dCurta(proj[maxDia].dia) }] : [],
         });
@@ -187,7 +198,7 @@
         const out = Charts.diverging(el, {
           labels: per.map(dCurta), up: per.map((p) => sum(p, 'entradas')), down: per.map((p) => sum(p, 'saidas')),
           above: 'Entradas', below: 'Saídas', mark, markLabel: 'Previsto, mais claro', markSide: 'both', markTint: true, partial: partial >= 0 ? partial : null,
-          format: brl, tickFormat: fmtC, height: 230,
+          format: brl, tickFormat: fmtC, height: 300,
         });
         if (out && out.legend) legend.append(out.legend);
       }
@@ -307,7 +318,7 @@
   }
 
   // ------- A PAGAR -------
-  let pAll = false;
+  let pAll = false, pDia = null;
   function renderPagar() {
     const res = get('resumo'), dias35 = get('pagar_dias');
     const pico = dias35.reduce((a, r) => (r.valor > a.valor ? r : a), dias35[0]);
@@ -317,18 +328,7 @@
       kpi('Vence em 7 dias', brlS(-R(res, 'pagar_7_dias')), 'De hoje até a próxima semana', { cls: sinal(-R(res, 'pagar_7_dias')) }),
       kpi('Vence em 30 dias', brlS(-R(res, 'pagar_30_dias')), 'De hoje até daqui a 30 dias', { cls: sinal(-R(res, 'pagar_30_dias')) }),
       kpi('Abatimentos em 90 dias', brlS(R(res, 'abatimentos_90_dias')), 'Descontados de produtores', { cls: sinal(R(res, 'abatimentos_90_dias')) }));
-    const cal = $('#p-cal');
-    safe(cal, () => {
-      const max = Math.max(1, ...dias35.map((r) => r.valor));
-      cal.replaceChildren(...dias35.map((r) => {
-        const k = r.valor / max;
-        const b = h('button', { type: 'button', class: (r.passado ? 'past' : '') + (r.hoje ? ' today' : '') + (k > 0.55 ? ' strong' : ''), 'aria-label': `${dBR(r.dia)}: ${r.valor ? brl(r.valor) + ', ' + int(r.qtd) + (r.qtd === 1 ? ' título' : ' títulos') : 'nada a pagar'}`, title: r.valor ? `${dBR(r.dia)}: ${brl(r.valor)} em ${int(r.qtd)} ${r.qtd === 1 ? 'título' : 'títulos'}` : dBR(r.dia) },
-          h('span', { class: 'fill', style: `opacity:${r.valor ? (0.1 + 0.85 * k).toFixed(2) : 0}` }),
-          h('span', { class: 'd', text: dCurta(r.dia) }),
-          h('span', { class: 'v', text: r.valor ? MENOS + brlC(r.valor) : '' }));
-        return b;
-      }));
-    });
+    renderPagarCal();
     safe($('#p-cat'), () => barList($('#p-cat'), get('pagar_categoria').map((c) => ({ label: c.categoria, value: c.valor })), { thin: true, all: true, colour: 'var(--negative)', format: (v) => brlS(-v), tom: 'neg' }));
     drawPagarAbertos();
     const ab = get('abatimentos');
@@ -337,19 +337,41 @@
       $('#p-abat-empty').hidden = ab.length > 0;
     });
   }
+  function renderPagarCal() {
+    const dias35 = get('pagar_dias');
+    const cal = $('#p-cal');
+    safe(cal, () => {
+      const max = Math.max(1, ...dias35.map((r) => r.valor));
+      cal.replaceChildren(...dias35.map((r) => {
+        const k = r.valor / max;
+        const cls = (r.passado ? 'past' : '') + (r.hoje ? ' today' : '') + (k > 0.55 ? ' strong' : '');
+        const b = r.valor
+          ? h('button', { type: 'button', class: cls, 'aria-pressed': String(pDia === r.dia), 'aria-label': `${dBR(r.dia)}: ${brl(r.valor)} em ${int(r.qtd)} ${r.qtd === 1 ? 'título' : 'títulos'}. Mostrar na tabela`, title: `${dBR(r.dia)}: ${brl(r.valor)} em ${int(r.qtd)} ${r.qtd === 1 ? 'título' : 'títulos'}`, onclick: () => { pDia = pDia === r.dia ? null : r.dia; renderPagarCal(); drawPagarAbertos(); $('#p-abertos').closest('.card').scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); } },
+            h('span', { class: 'fill', style: `opacity:${(0.1 + 0.85 * k).toFixed(2)}` }),
+            h('span', { class: 'd', text: dCurta(r.dia) }),
+            h('span', { class: 'v', text: MENOS + brlC(r.valor) }))
+          : h('div', { class: cls, role: 'img', 'aria-label': `${dBR(r.dia)}: nada a pagar` },
+            h('span', { class: 'd', text: dCurta(r.dia) }));
+        return b;
+      }));
+    });
+  }
   function drawPagarAbertos() {
     const tb = $('#p-abertos');
     safe(tb, () => {
-      const rows = get('pagar_abertos');
-      $('#p-abertos-meta').textContent = `${int(rows.length)} títulos, por vencimento`;
-      const show = pAll ? rows : rows.slice(0, 15);
+      const todos = get('pagar_abertos');
+      const rows = pDia ? todos.filter((r) => r.vencimento === pDia) : todos;
+      $('#p-abertos-meta').textContent = `${int(todos.length)} títulos, por vencimento`;
+      $('#p-filtro').hidden = !pDia;
+      if (pDia) $('#p-filtro-txt').textContent = `Mostrando ${rows.length === 1 ? 'o título que vence' : `os ${int(rows.length)} títulos que vencem`} em ${dBR(pDia)}.`;
+      const show = pAll || pDia ? rows : rows.slice(0, 15);
       tb.replaceChildren(...show.map((r) => h('tr', {},
         h('td', {}, quando(r.vencimento), r.situacao !== 'A vencer' ? h('span', { class: 'sub' }, h('span', { class: 'pill ' + (r.situacao === 'Vencido' ? 'pill-neg' : 'pill-warn'), text: r.situacao })) : null),
         h('td', { class: 'id' }, h('b', { text: r.fornecedor }), h('span', { class: 'sub', text: r.documento })),
         h('td', { class: 'hide-sm', text: r.categoria }),
         h('td', { class: 'num' }, h('span', { class: sinal(-r.liquido), text: brlS(-r.liquido) }), r.abatimento ? h('span', { class: 'sub', text: `${brl(r.valor)} menos ${brl(r.abatimento)}` }) : null))));
       const more = $('#p-more');
-      more.hidden = pAll || rows.length <= 15;
+      more.hidden = pAll || !!pDia || rows.length <= 15;
       more.textContent = `Mostrar todos os ${int(rows.length)}`;
     });
   }
@@ -907,12 +929,328 @@
     }
   });
 
+  // ------- CSV (relatórios e extrato) -------
+  // Separador ponto e vírgula e vírgula decimal, como o Excel em português espera. Valores saem dos centavos sem passar por texto formatado.
+  const csvValor = (v) => { if (v == null || v === '') return ''; const c = Math.round(v * 100); const a = Math.abs(c); return (c < 0 ? '-' : '') + Math.floor(a / 100) + ',' + String(a % 100).padStart(2, '0'); };
+  const csvData = (iso) => (iso ? dBR(iso) : '');
+  const csvCel = (v) => { const t = String(v ?? ''); return /[;"\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  function baixarCSV(arquivo, cols, rows) {
+    const linhas = [cols.map((c) => csvCel(c[0])).join(';'), ...rows.map((r) => cols.map((c) => csvCel(c[1](r))).join(';'))];
+    const blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = h('a', { href: url, download: arquivo, hidden: true });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return rows.length;
+  }
+  const nomeArq = (base, de, ate) => `${base}${de ? '_' + dBR(de).replace(/\//g, '-') : ''}${ate ? '_a_' + dBR(ate).replace(/\//g, '-') : ''}.csv`;
+  const linhasTxt = (n) => `${int(n)} ${n === 1 ? 'linha' : 'linhas'}`;
+
+  // ------- CONTAS FINANCEIRAS -------
+  const aState = { conta: null, q: '', tipo: '', de: '', ate: '', n: 50 };
+  function renderContas() {
+    const cs = get('contas_resumo');
+    if (!cs.length) { $('#a-finding').textContent = 'A fonte Contas está vazia. Importe as contas em Importar dados.'; $('#a-strip').replaceChildren(); $('#a-extrato').hidden = true; return; }
+    $('#a-extrato').hidden = false;
+    if (!aState.conta || !cs.some((c) => c.conta === aState.conta)) aState.conta = (cs.find((c) => c.lancamentos > 0) || cs[0]).conta;
+    const total = cs.reduce((t, c) => t + Math.round(c.saldo * 100), 0) / 100;
+    const maior = cs.slice().sort((a, b) => b.saldo - a.saldo)[0];
+    $('#a-finding').replaceChildren(`As ${int(cs.length)} contas somam `, forte(total, brl(total)), ' hoje. ',
+      maior && maior.participacao != null ? h('span', {}, 'A maior parte está no ', h('span', { class: 'band', text: `${maior.conta}, com ${pct(maior.participacao)}` }), ' do total.') : '');
+    $('#a-stamp').textContent = `Saldos de ${dBR(HOJE)}`;
+    const strip = $('#a-strip');
+    strip.style.setProperty('--n', cs.length);
+    strip.replaceChildren(...cs.map((c) => h('button', { type: 'button', 'aria-pressed': String(c.conta === aState.conta), onclick: () => { aState.conta = c.conta; aState.n = 50; $$('#a-strip button').forEach((b, i) => b.setAttribute('aria-pressed', String(cs[i].conta === aState.conta))); drawExtrato(); } },
+      h('span', { class: 'kpi-label', text: c.conta }),
+      h('span', { class: 'kpi-value ' + (c.saldo === 0 ? 'zero' : sinal(c.saldo)), text: brl(c.saldo) }),
+      h('span', { class: 'kpi-sub' }, c.lancamentos
+        ? [h('span', { class: sinal(c.entradas_30d) || null, text: brlS(c.entradas_30d) }), ' e ', h('span', { class: sinal(-c.saidas_30d) || null, text: brlS(-c.saidas_30d) }), ' em 30 dias']
+        : `${c.tipo}, sem lançamentos nas fontes`))));
+    const ex = get('extrato_contas');
+    if (ex.length) { const min = ex[ex.length - 1].data; for (const id of ['#a-de', '#a-ate']) { $(id).min = min; $(id).max = HOJE; } }
+    drawExtrato();
+  }
+  const extratoFiltrado = () => {
+    const q = aState.q.trim().toLocaleLowerCase('pt-BR');
+    return get('extrato_contas').filter((r) => r.conta === aState.conta && (!aState.tipo || r.tipo === aState.tipo) && (!aState.de || r.data >= aState.de) && (!aState.ate || r.data <= aState.ate) &&
+      (!q || `${r.descricao} ${r.contraparte || ''} ${r.categoria}`.toLocaleLowerCase('pt-BR').includes(q)));
+  };
+  function drawExtrato() {
+    const tb = $('#a-body');
+    safe(tb, () => {
+      const c = get('contas_resumo').find((x) => x.conta === aState.conta);
+      const todas = get('extrato_contas').filter((r) => r.conta === aState.conta);
+      const rows = extratoFiltrado();
+      $('#a-titulo').textContent = `Extrato: ${aState.conta}`;
+      $('#a-meta').textContent = todas.length ? `${int(todas.length)} lançamentos, do mais recente para o mais antigo` : '';
+      const ent = rows.filter((r) => r.valor > 0).reduce((s, r) => s + Math.round(r.valor * 100), 0) / 100;
+      const sai = rows.filter((r) => r.valor < 0).reduce((s, r) => s + Math.round(r.valor * 100), 0) / 100;
+      const show = rows.slice(0, aState.n);
+      $('#a-count').replaceChildren(...(rows.length ? [`Mostrando ${int(show.length)} de ${int(rows.length)}. Entradas `, h('span', { class: sinal(ent) || null, text: brlS(ent) }), ', saídas ', h('span', { class: sinal(sai) || null, text: brlS(sai) }), '.'] : []));
+      tb.replaceChildren(...show.map((r) => h('tr', {},
+        h('td', { text: dBR(r.data) }),
+        h('td', { class: 'id' }, h('b', { text: r.descricao || r.categoria }), r.contraparte ? h('span', { class: 'sub', text: r.contraparte }) : null),
+        h('td', { class: 'hide-sm', text: r.categoria }),
+        h('td', { class: 'hide-sm', text: r.forma || '—' }),
+        h('td', { class: 'num ' + sinal(r.valor), text: brlS(r.valor) }))));
+      const vazio = $('#a-empty');
+      vazio.hidden = rows.length > 0;
+      vazio.textContent = todas.length ? 'Nenhum lançamento com estes filtros. Use Limpar filtros para ver todos.' : `${aState.conta} não tem lançamentos nas fontes. O saldo de ${c ? brl(c.saldo) : '—'} vem da fonte Contas.`;
+      $('#a-csv').disabled = !rows.length;
+      $('#a-more').hidden = rows.length <= aState.n;
+    });
+  }
+
+  // ------- CLIENTES E FORNECEDORES -------
+  const kState = { aba: 'clientes', q: '', f1: '', f2: '', sit: '', sort: 'nome', dir: 1, n: 25, sel: { clientes: null, fornecedores: null } };
+  const SIT_PILL = { 'Vencido': 'pill-neg', 'Vence hoje': 'pill-warn', 'A vencer': 'pill-neutral', 'Recebido': 'pill-pos', 'Pago': 'pill-pos' };
+  const K = {
+    clientes: {
+      nome: 'Clientes', rows: () => get('cadastro_clientes'),
+      filtros: [['f1', 'Vendedor', 'vendedor', 'Todos os vendedores'], ['f2', 'Rota', 'rota', 'Todas as rotas']],
+      sits: [['', 'Todos os clientes'], ['aberto', 'Com valor em aberto'], ['vencido', 'Com valor vencido'], ['limite', 'Acima do limite']],
+      sit: (r, s) => (s === 'aberto' ? r.aberto > 0 : s === 'vencido' ? r.vencido > 0 : s === 'limite' ? r.uso_limite > 1 : true),
+      busca: (r) => `${r.nome} ${r.vendedor} ${r.rota} ${r.tipo}`,
+      cols: [
+        ['nome', 'Cliente', '', (r) => [h('button', { type: 'button', class: 'nome', text: r.nome, onclick: () => selecionar(r.id) }), h('span', { class: 'sub', text: [r.rota, r.vendedor].filter(Boolean).join(', ') })], 'id'],
+        ['nota_ordem', 'Nota', 'hide-sm', (r) => h('span', { class: 'pill ' + NOTA_PILL[r.nota], text: r.nota })],
+        ['aberto', 'Em aberto', 'num', (r) => h('span', { class: sinal(r.aberto) || 'dash', text: r.aberto ? brl(r.aberto) : '—' })],
+        ['vencido', 'Vencido', 'num', (r) => h('span', { class: r.vencido > 0 ? 'neg' : 'dash', text: r.vencido > 0 ? brl(r.vencido) : '—' })],
+        ['uso_limite', 'Limite usado', 'num hide-sm', (r) => (r.uso_limite > 1 ? h('span', { class: 'pill pill-neg', text: pct(r.uso_limite) }) : r.uso_limite == null ? '—' : pct(r.uso_limite))],
+      ],
+    },
+    fornecedores: {
+      nome: 'Fornecedores', rows: () => get('cadastro_fornecedores'),
+      filtros: [['f1', 'Categoria', 'categoria', 'Todas as categorias']],
+      sits: [['', 'Todos os fornecedores'], ['aberto', 'Com valor em aberto'], ['vencido', 'Com valor vencido']],
+      sit: (r, s) => (s === 'aberto' ? r.aberto > 0 : s === 'vencido' ? r.vencido > 0 : true),
+      busca: (r) => `${r.nome} ${r.categoria}`,
+      cols: [
+        ['nome', 'Fornecedor', '', (r) => [h('button', { type: 'button', class: 'nome', text: r.nome, onclick: () => selecionar(r.id) }), h('span', { class: 'sub', text: r.categoria })], 'id'],
+        ['proximo_vencimento', 'Próximo vencimento', 'hide-sm', (r) => (r.proximo_vencimento ? quando(r.proximo_vencimento) : '—')],
+        ['aberto', 'Em aberto', 'num', (r) => h('span', { class: sinal(-r.aberto) || 'dash', text: r.aberto ? brlS(-r.aberto) : '—' })],
+        ['vencido', 'Vencido', 'num', (r) => h('span', { class: r.vencido > 0 ? 'neg' : 'dash', text: r.vencido > 0 ? brlS(-r.vencido) : '—' })],
+        ['pago_90d', 'Pago em 90 dias', 'num hide-sm', (r) => (r.pago_90d ? brl(r.pago_90d) : '—')],
+      ],
+    },
+  };
+  function renderCadastros() {
+    const def = K[kState.aba];
+    $$('#cadastros .seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === kState.aba)));
+    const rows = def.rows();
+    if (kState.aba === 'clientes') {
+      const res = get('resumo');
+      const comVenc = rows.filter((r) => r.vencido > 0).length;
+      $('#k-finding').replaceChildren(`São ${int(rows.length)} clientes, ${int(rows.filter((r) => r.aberto > 0).length)} com títulos em aberto. `, comVenc ? h('span', {}, h('span', { class: 'band', text: `${int(comVenc)} ${comVenc === 1 ? 'cliente tem' : 'clientes têm'} valor vencido` }), ', somando ', forte(-1, brl(R(res, 'vencidos_valor'))), '.') : 'Nenhum cliente tem valor vencido.');
+    } else {
+      const venc = rows.reduce((t, r) => t + Math.round(r.vencido * 100), 0) / 100;
+      const prox = rows.filter((r) => r.proximo_vencimento).sort((a, b) => a.proximo_vencimento.localeCompare(b.proximo_vencimento))[0];
+      $('#k-finding').replaceChildren(`São ${int(rows.length)} fornecedores nos títulos a pagar. `, venc > 0 ? h('span', {}, 'Há ', h('span', { class: 'band', text: `${brl(venc)} vencidos` }), ' sem baixa. ') : 'Nada está vencido. ', prox ? `O próximo pagamento é para ${prox.nome}, ${quando(prox.proximo_vencimento).toLowerCase()}.` : '');
+    }
+    const fx = $('#k-filters');
+    const busca = h('input', { class: 'input', id: 'k-q', type: 'search', placeholder: kState.aba === 'clientes' ? 'Nome, vendedor, rota ou tipo' : 'Nome ou categoria' });
+    busca.value = kState.q;
+    let tk; busca.addEventListener('input', () => { clearTimeout(tk); tk = setTimeout(() => { kState.q = busca.value; kState.n = 25; drawCadastros(); }, 150); });
+    const selects = def.filtros.map(([k, rot, col, todos]) => {
+      const vals = [...new Set(rows.map((r) => r[col]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      const s = h('select', { class: 'select', id: 'k-' + k }, h('option', { value: '', text: todos }), ...vals.map((v) => h('option', { value: v, text: v })));
+      s.value = kState[k]; s.addEventListener('change', () => { kState[k] = s.value; kState.n = 25; drawCadastros(); });
+      return h('label', { class: 'field' }, h('span', { text: rot }), s);
+    });
+    const sit = h('select', { class: 'select', id: 'k-sit' }, ...def.sits.map(([v, t]) => h('option', { value: v, text: t })));
+    sit.value = kState.sit; sit.addEventListener('change', () => { kState.sit = sit.value; kState.n = 25; drawCadastros(); });
+    const limpar = h('button', { type: 'button', class: 'btn btn-ghost', onclick: () => { Object.assign(kState, { q: '', f1: '', f2: '', sit: '', n: 25 }); renderCadastros(); } }, 'Limpar filtros');
+    fx.replaceChildren(h('label', { class: 'field field-grow' }, h('span', { text: 'Buscar' }), h('span', { class: 'search' }, icon('magnifying-glass'), busca)), ...selects, h('label', { class: 'field' }, h('span', { text: 'Situação' }), sit), limpar);
+    drawCadastros();
+    drawFicha();
+  }
+  function drawCadastros() {
+    const def = K[kState.aba];
+    const tb = $('#k-body');
+    safe(tb, () => {
+      const q = kState.q.trim().toLocaleLowerCase('pt-BR');
+      const todos = def.rows();
+      let rows = todos.filter((r) => def.filtros.every(([k, , col]) => !kState[k] || r[col] === kState[k]) && def.sit(r, kState.sit) && (!q || def.busca(r).toLocaleLowerCase('pt-BR').includes(q)));
+      rows = rows.slice().sort((a, b) => { const x = a[kState.sort], y = b[kState.sort]; return (typeof x === 'number' || typeof y === 'number' ? (x ?? -1) - (y ?? -1) : String(x ?? '').localeCompare(String(y ?? ''), 'pt-BR')) * kState.dir || a.nome.localeCompare(b.nome, 'pt-BR'); });
+      $('#k-lista-h').textContent = def.nome;
+      $('#k-meta').textContent = rows.length === todos.length ? `${int(todos.length)} no total` : `${int(rows.length)} de ${int(todos.length)}`;
+      $('#k-head').replaceChildren(h('tr', {}, ...def.cols.map(([k, rot, cls]) => h('th', { class: cls || null, 'aria-sort': kState.sort === k ? (kState.dir < 0 ? 'descending' : 'ascending') : null },
+        h('button', { type: 'button', class: 'sort', text: rot, onclick: () => { kState.dir = kState.sort === k ? -kState.dir : (k === 'nome' ? 1 : -1); kState.sort = k; drawCadastros(); } })))));
+      const show = rows.slice(0, kState.n);
+      const sel = kState.sel[kState.aba];
+      tb.replaceChildren(...show.map((r) => h('tr', { class: r.id === sel ? 'sel' : null }, ...def.cols.map(([, , cls, fn, tdCls]) => h('td', { class: [cls, tdCls].filter(Boolean).join(' ') || null }, fn(r))))));
+      const vazio = $('#k-empty');
+      vazio.hidden = rows.length > 0;
+      vazio.textContent = todos.length ? 'Ninguém com estes filtros. Use Limpar filtros para ver a lista inteira.' : `Ainda não há ${def.nome.toLowerCase()} nas fontes. Importe a planilha em Importar dados.`;
+      const more = $('#k-more');
+      more.hidden = rows.length <= kState.n;
+      more.textContent = `Mostrar mais ${int(Math.min(25, rows.length - kState.n))}`;
+    });
+  }
+  function selecionar(id) {
+    kState.sel[kState.aba] = kState.sel[kState.aba] === id ? null : id;
+    drawCadastros(); drawFicha();
+    if (kState.sel[kState.aba] && matchMedia('(max-width: 1100px)').matches) $('#k-ficha').scrollIntoView({ block: 'start' });
+  }
+  function irLancamentos(q) {
+    lState.q = q; lState.n = 50; $('#l-q').value = q;
+    if (done.has('lancamentos')) drawLanc();
+    location.hash = '#lancamentos';
+  }
+  function drawFicha() {
+    const box = $('#k-ficha');
+    safe(box, () => {
+      const id = kState.sel[kState.aba];
+      const ehCliente = kState.aba === 'clientes';
+      const r = id && K[kState.aba].rows().find((x) => x.id === id);
+      if (!r) {
+        box.replaceChildren(h('div', { class: 'card-head' }, h('h2', { text: ehCliente ? 'Ficha do cliente' : 'Ficha do fornecedor' })),
+          h('p', { class: 'empty', text: ehCliente ? 'Escolha um cliente na lista para ver os títulos em aberto e os últimos recebimentos.' : 'Escolha um fornecedor na lista para ver os títulos em aberto e os últimos pagamentos.' }));
+        return;
+      }
+      const kv = (dt, dd) => h('div', {}, h('dt', { text: dt }), h('dd', {}, dd));
+      const item = (when, who, small, amt, cls, pill) => h('li', {}, h('span', { class: 'when', text: when }), h('span', { class: 'who' }, who, h('small', {}, pill ? [h('span', { class: 'pill ' + SIT_PILL[pill], text: pill }), ' '] : null, small)), h('span', { class: 'amt num ' + (cls || ''), text: amt }));
+      const lista = (rows, max, fn, vazio) => (rows.length ? [h('ul', { class: 'list' }, ...rows.slice(0, max).map(fn)), rows.length > max ? h('p', { class: 'card-note', text: `E mais ${int(rows.length - max)}. A lista completa está no relatório de títulos.` }) : null] : [h('p', { class: 'empty', text: vazio })]);
+      let corpo;
+      if (ehCliente) {
+        const t = get('titulos_receber').filter((x) => x.cliente_id === r.id);
+        const abertos = t.filter((x) => !x.pago_em).sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+        const pagos = t.filter((x) => x.pago_em).sort((a, b) => b.pago_em.localeCompare(a.pago_em));
+        corpo = [
+          h('div', { class: 'who-h' }, h('h2', { text: r.nome }), h('p', { text: [r.tipo, r.rota, r.vendedor && `vendedor ${r.vendedor}`].filter(Boolean).join(', ') })),
+          h('dl', { class: 'kv' },
+            kv('Nota de pagador', h('span', { class: 'pill ' + NOTA_PILL[r.nota], text: r.nota })),
+            kv('Em aberto', h('span', { class: sinal(r.aberto) || null, text: brl(r.aberto) })),
+            kv('Vencido', h('span', { class: r.vencido > 0 ? 'neg' : null, text: brl(r.vencido) })),
+            kv('Limite de crédito', `${brl(r.limite)}${r.uso_limite != null ? `, ${pct(r.uso_limite)} usado` : ''}`),
+            kv('Última compra', r.ultima_compra ? dBR(r.ultima_compra) : '—'),
+            kv('Recebido em 90 dias', h('span', { class: sinal(r.recebido_90d) || null, text: brl(r.recebido_90d) }))),
+          h('h3', { text: `Títulos em aberto (${int(abertos.length)})` }),
+          ...lista(abertos, 8, (x) => item(dCurta(x.vencimento), `${x.forma} ${x.parcela} do ${x.pedido}`, x.situacao === 'Vencido' ? `${dias(x.atraso)} de atraso` : '', brlS(x.valor), 'pos', x.situacao), 'Nenhum título em aberto.'),
+          h('h3', { text: 'Últimos recebimentos' }),
+          ...lista(pagos, 5, (x) => item(dCurta(x.pago_em), `${x.pedido}, venceu em ${dCurta(x.vencimento)}`, x.atraso ? `${dias(x.atraso)} de atraso` : 'Em dia', brlS(x.valor), 'pos'), 'Nenhum recebimento nas fontes.'),
+        ];
+      } else {
+        const t = get('titulos_pagar').filter((x) => x.fornecedor === r.id);
+        const abertos = t.filter((x) => !x.pago_em).sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+        const pagos = t.filter((x) => x.pago_em).sort((a, b) => b.pago_em.localeCompare(a.pago_em));
+        corpo = [
+          h('div', { class: 'who-h' }, h('h2', { text: r.nome }), h('p', { text: r.categoria })),
+          h('dl', { class: 'kv' },
+            kv('Em aberto', h('span', { class: sinal(-r.aberto) || null, text: brlS(-r.aberto) })),
+            kv('Vencido', h('span', { class: r.vencido > 0 ? 'neg' : null, text: r.vencido > 0 ? brlS(-r.vencido) : brl(0) })),
+            kv('Próximo vencimento', r.proximo_vencimento ? dBR(r.proximo_vencimento) : '—'),
+            kv('Pago em 90 dias', brl(r.pago_90d)),
+            kv('Abatido em 90 dias', h('span', { class: sinal(r.abatimentos_90d) || null, text: brlS(r.abatimentos_90d) }))),
+          h('h3', { text: `Títulos em aberto (${int(abertos.length)})` }),
+          ...lista(abertos, 8, (x) => item(dCurta(x.vencimento), x.documento || x.categoria, x.abatimento ? `${brl(x.valor)} menos ${brl(x.abatimento)} de abatimento` : '', brlS(-x.liquido), 'neg', x.situacao), 'Nenhum título em aberto.'),
+          h('h3', { text: 'Últimos pagamentos' }),
+          ...lista(pagos, 5, (x) => item(dCurta(x.pago_em), x.documento || x.categoria, `venceu em ${dCurta(x.vencimento)}`, brlS(-x.liquido), 'neg'), 'Nenhum pagamento nas fontes.'),
+        ];
+      }
+      box.replaceChildren(...corpo.filter(Boolean), h('div', { class: 'acoes card-foot' },
+        h('button', { type: 'button', class: 'btn btn-text', onclick: () => irLancamentos(r.nome) }, 'Ver os lançamentos'),
+        h('button', { type: 'button', class: 'btn btn-text', onclick: () => { const nome = r.nome; kState.sel[kState.aba] = null; drawCadastros(); drawFicha(); $$('#k-body .nome').find((b) => b.textContent === nome)?.focus(); } }, 'Fechar ficha')));
+    });
+  }
+  $$('#cadastros .seg button').forEach((b) => b.addEventListener('click', () => { if (kState.aba === b.dataset.k) return; Object.assign(kState, { aba: b.dataset.k, q: '', f1: '', f2: '', sit: '', sort: 'nome', dir: 1, n: 25 }); renderCadastros(); }));
+  $('#k-more').addEventListener('click', () => { kState.n += 25; drawCadastros(); });
+
+  // ------- RELATÓRIOS -------
+  const xState = { p: 'mes', de: '', ate: '' };
+  const periodo = (p) => {
+    if (p === 'mes') return [HOJE.slice(0, 8) + '01', HOJE];
+    if (p === 'anterior') { const fim = addDias(HOJE.slice(0, 8) + '01', -1); return [fim.slice(0, 8) + '01', fim]; }
+    return [addDias(HOJE, -(Number(p) - 1)), HOJE];
+  };
+  const noPer = (iso) => !!iso && iso >= xState.de && iso <= xState.ate;
+  const sinalLanc = (r) => (r.tipo === 'saida' ? -r.valor : r.valor);
+  const RELS = [
+    { id: 'lancamentos', nome: 'Lançamentos', desc: 'Entradas e saídas realizadas, com conta, categoria e forma.', per: 'Data do lançamento',
+      rows: () => get('lanc_view').filter((r) => noPer(r.data)).sort((a, b) => a.data.localeCompare(b.data) || String(a.id).localeCompare(String(b.id))),
+      cols: [['Data', (r) => csvData(r.data)], ['Tipo', (r) => (r.tipo === 'saida' ? 'Saída' : 'Entrada')], ['Categoria', (r) => r.categoria], ['Descrição', (r) => r.descricao], ['Cliente ou fornecedor', (r) => r.contraparte], ['Conta', (r) => r.conta], ['Forma', (r) => r.forma], ['Valor', (r) => csvValor(sinalLanc(r))]] },
+    { id: 'extrato', nome: 'Extrato por conta', desc: 'Os mesmos lançamentos agrupados por conta, valor com sinal.', per: 'Data do lançamento',
+      rows: () => get('extrato_contas').filter((r) => noPer(r.data)).slice().sort((a, b) => a.conta.localeCompare(b.conta, 'pt-BR') || a.data.localeCompare(b.data)),
+      cols: [['Conta', (r) => r.conta], ['Data', (r) => csvData(r.data)], ['Descrição', (r) => r.descricao], ['Cliente ou fornecedor', (r) => r.contraparte], ['Categoria', (r) => r.categoria], ['Forma', (r) => r.forma], ['Valor', (r) => csvValor(r.valor)]] },
+    { id: 'receber', nome: 'Títulos a receber', desc: 'Em aberto e recebidos, com situação e dias de atraso.', per: 'Vencimento',
+      rows: () => get('titulos_receber').filter((r) => noPer(r.vencimento)).slice().reverse(),
+      cols: [['Título', (r) => r.id], ['Pedido', (r) => r.pedido], ['Cliente', (r) => r.cliente], ['Forma', (r) => r.forma], ['Parcela', (r) => r.parcela], ['Emissão', (r) => csvData(r.emissao)], ['Vencimento', (r) => csvData(r.vencimento)], ['Recebido em', (r) => csvData(r.pago_em)], ['Situação', (r) => r.situacao], ['Dias de atraso', (r) => r.atraso], ['Valor', (r) => csvValor(r.valor)]] },
+    { id: 'pagar', nome: 'Títulos a pagar', desc: 'Em aberto e pagos, com abatimento e valor líquido.', per: 'Vencimento',
+      rows: () => get('titulos_pagar').filter((r) => noPer(r.vencimento)).slice().reverse(),
+      cols: [['Título', (r) => r.id], ['Fornecedor', (r) => r.fornecedor], ['Categoria', (r) => r.categoria], ['Documento', (r) => r.documento], ['Emissão', (r) => csvData(r.emissao)], ['Vencimento', (r) => csvData(r.vencimento)], ['Pago em', (r) => csvData(r.pago_em)], ['Situação', (r) => r.situacao], ['Valor', (r) => csvValor(-r.valor)], ['Abatimento', (r) => csvValor(r.abatimento)], ['Líquido', (r) => csvValor(-r.liquido)], ['Motivo do abatimento', (r) => r.motivo_abatimento]] },
+    { id: 'fluxo', nome: 'Fluxo de caixa por dia', desc: 'Entradas e saídas por dia, realizado e previsto pelos títulos em aberto.', per: 'Dia',
+      rows: () => get('fluxo').filter((r) => r.grao === 'dia' && noPer(r.periodo)),
+      cols: [['Dia', (r) => csvData(r.periodo)], ['Natureza', (r) => (r.natureza === 'previsto' ? 'Previsto' : 'Realizado')], ['Entradas', (r) => csvValor(r.entradas)], ['Saídas', (r) => csvValor(-r.saidas)], ['Líquido', (r) => csvValor(r.liquido)]] },
+    { id: 'fechamentos', nome: 'Fechamentos de caixa', desc: 'Esperado, contado e diferença da gaveta por dia.', per: 'Dia do fechamento',
+      rows: () => get('fechamento_dias').filter((r) => noPer(r.data)),
+      cols: [['Dia', (r) => csvData(r.data)], ['Responsável', (r) => r.responsavel], ['Vendas do dia', (r) => csvValor(r.vendas_total)], ['Esperado na gaveta', (r) => csvValor(r.esperado)], ['Contado', (r) => csvValor(r.contado)], ['Diferença', (r) => csvValor(r.diferenca)]] },
+    { id: 'categorias', nome: 'Entradas e saídas por categoria', desc: 'Mês atual até hoje comparado com o mês anterior inteiro.', per: null,
+      rows: () => get('categorias'),
+      cols: [['Categoria', (r) => r.categoria], ['Tipo', (r) => (r.tipo === 'saida' ? 'Saída' : 'Entrada')], ['Mês atual', (r) => csvValor(r.tipo === 'saida' ? -r.mes_atual : r.mes_atual)], ['Mês anterior', (r) => csvValor(r.tipo === 'saida' ? -r.mes_anterior : r.mes_anterior)]] },
+    { id: 'clientes', nome: 'Clientes', desc: 'Cadastro com limite, em aberto, vencido e nota de pagador.', per: null,
+      rows: () => get('cadastro_clientes'),
+      cols: [['Código', (r) => r.id], ['Nome', (r) => r.nome], ['Tipo', (r) => r.tipo], ['Rota', (r) => r.rota], ['Vendedor', (r) => r.vendedor], ['Limite de crédito', (r) => csvValor(r.limite)], ['Em aberto', (r) => csvValor(r.aberto)], ['Vencido', (r) => csvValor(r.vencido)], ['Última compra', (r) => csvData(r.ultima_compra)], ['Nota de pagador', (r) => r.nota]] },
+    { id: 'fornecedores', nome: 'Fornecedores', desc: 'Em aberto, vencido, próximo vencimento e pago em 90 dias.', per: null,
+      rows: () => get('cadastro_fornecedores'),
+      cols: [['Fornecedor', (r) => r.nome], ['Categoria principal', (r) => r.categoria], ['Em aberto', (r) => csvValor(-r.aberto)], ['Vencido', (r) => csvValor(-r.vencido)], ['Próximo vencimento', (r) => csvData(r.proximo_vencimento)], ['Pago em 90 dias', (r) => csvValor(r.pago_90d)], ['Abatido em 90 dias', (r) => csvValor(r.abatimentos_90d)]] },
+  ];
+  function renderRelatorios() {
+    if (!xState.de) [xState.de, xState.ate] = periodo(xState.p);
+    $$('#relatorios .seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === xState.p)));
+    $('#x-de').value = xState.de; $('#x-ate').value = xState.ate;
+    $('#x-periodo-txt').textContent = `De ${dBR(xState.de)} a ${dBR(xState.ate)}`;
+    const tb = $('#x-body');
+    safe(tb, () => {
+      tb.replaceChildren(...RELS.map((rel) => {
+        const n = rel.rows().length;
+        return h('tr', {},
+          h('td', { class: 'id' }, h('b', { text: rel.nome }), h('span', { class: 'sub', text: rel.desc })),
+          h('td', { class: 'hide-sm' }, rel.per ? rel.per : h('span', { class: 'dash', text: 'Não usa' })),
+          h('td', { class: 'num' + (n ? '' : ' dash'), text: int(n) }),
+          h('td', { class: 'num' }, h('button', { type: 'button', class: 'btn btn-ghost', disabled: !n, 'aria-label': `Baixar ${rel.nome} em CSV`, onclick: () => {
+            const rows = rel.rows();
+            const arq = nomeArq(rel.id, rel.per ? xState.de : '', rel.per ? xState.ate : HOJE);
+            const st = $('#x-status');
+            try { baixarCSV(arq, rel.cols, rows); st.className = 'status-line ok'; st.textContent = `${arq} gerado com ${linhasTxt(rows.length)}. Confira a pasta de downloads do navegador.`; }
+            catch (e) { console.error(e); st.className = 'status-line neg'; st.textContent = `O arquivo de ${rel.nome.toLowerCase()} não foi gerado: ${e.message || 'o navegador bloqueou o download'}.`; }
+          } }, icon('download-simple'), 'CSV')));
+      }));
+    });
+  }
+  $$('#relatorios .seg button').forEach((b) => b.addEventListener('click', () => { xState.p = b.dataset.p; [xState.de, xState.ate] = periodo(xState.p); $('#x-status').textContent = ''; renderRelatorios(); }));
+  for (const [id, k] of [['#x-de', 'de'], ['#x-ate', 'ate']]) $(id).addEventListener('change', (e) => {
+    const v = e.target.value;
+    if (!v || !e.target.validity.valid) return;
+    xState[k] = v; xState.p = '';
+    if (xState.de > xState.ate) { if (k === 'de') xState.ate = v; else xState.de = v; }
+    $('#x-status').textContent = '';
+    renderRelatorios();
+  });
+
+  // Controles do extrato
+  let ta;
+  $('#a-q').addEventListener('input', (e) => { clearTimeout(ta); ta = setTimeout(() => { aState.q = e.target.value; aState.n = 50; drawExtrato(); }, 150); });
+  $('#a-tipo').addEventListener('change', (e) => { aState.tipo = e.target.value; aState.n = 50; drawExtrato(); });
+  for (const [id, k] of [['#a-de', 'de'], ['#a-ate', 'ate']]) $(id).addEventListener('change', (e) => { const v = e.target.value; if (!v || e.target.validity.valid) { aState[k] = v; aState.n = 50; drawExtrato(); } });
+  $('#a-clear').addEventListener('click', () => { Object.assign(aState, { q: '', tipo: '', de: '', ate: '', n: 50 }); $('#a-q').value = ''; $('#a-tipo').value = ''; $('#a-de').value = ''; $('#a-ate').value = ''; drawExtrato(); });
+  $('#a-more').addEventListener('click', () => { aState.n += 50; drawExtrato(); });
+  $('#a-csv').addEventListener('click', () => {
+    const rows = extratoFiltrado();
+    if (!rows.length) return;
+    const datas = rows.map((r) => r.data).sort();
+    const arq = nomeArq('extrato_' + semAcento(aState.conta).toLowerCase().replace(/[^a-z0-9]+/g, '-'), datas[0], datas[datas.length - 1]);
+    baixarCSV(arq, RELS[1].cols, rows.slice().reverse());
+    $('#a-count').append(` Arquivo ${arq} gerado com ${linhasTxt(rows.length)}.`);
+  });
+
   // Recalcula tudo depois de importar ou voltar ao exemplo
   function recarregar() {
     for (const k of Object.keys(cache)) delete cache[k];
     HOJE = DATA.contas[0] ? DATA.contas[0].data_saldo : hojeReal();
     done.clear();
-    cDia = null; rState.all = false; rState.cartaoAll = false; pAll = false; lState.n = 50; lState.sel = {};
+    cDia = null; rState.all = false; rState.cartaoAll = false; pAll = false; pDia = null; lState.n = 50; lState.sel = {};
+    aState.conta = null; aState.n = 50; kState.sel = { clientes: null, fornecedores: null }; kState.n = 25; xState.de = ''; xState.p = xState.p || 'mes';
+    atualizarFonte();
     $$('#lancamentos select[data-col]').forEach((s) => s.replaceChildren());
     atualizarContagem();
     if (!$('#g-resumo').hidden) $('#g-resumo-txt').value = textoResumo();
@@ -928,8 +1266,17 @@
   }
 
   // ------- ROTAS -------
-  const VIEWS = { geral: renderGeral, fluxo: renderFluxo, receber: renderReceber, pagar: renderPagar, fechamento: renderFechamento, lancamentos: renderLanc, indicadores: renderInd, conciliacao: renderConc, dados: renderDados };
-  const NOMES = { geral: 'Visão geral', fluxo: 'Fluxo de caixa', receber: 'A receber', pagar: 'A pagar', fechamento: 'Fechamento', lancamentos: 'Lançamentos', indicadores: 'Indicadores', conciliacao: 'Conciliação', dados: 'Importar dados' };
+  const VIEWS = { geral: renderGeral, fluxo: renderFluxo, receber: renderReceber, pagar: renderPagar, lancamentos: renderLanc, contas: renderContas, fechamento: renderFechamento, cadastros: renderCadastros, indicadores: renderInd, relatorios: renderRelatorios, conciliacao: renderConc, dados: renderDados };
+  const NAV = [
+    ['Principal', [['geral', 'Visão geral', 'house'], ['fluxo', 'Fluxo de caixa', 'chart-line']]],
+    ['Financeiro', [['receber', 'A receber', 'hand-coins'], ['pagar', 'A pagar', 'receipt'], ['lancamentos', 'Lançamentos', 'list-bullets'], ['contas', 'Contas financeiras', 'wallet'], ['fechamento', 'Fechamento de caixa', 'cash-register']]],
+    ['Gestão', [['cadastros', 'Clientes e fornecedores', 'users-three'], ['indicadores', 'Indicadores', 'gauge'], ['relatorios', 'Relatórios', 'file-text']]],
+    ['Ferramentas', [['conciliacao', 'Conciliação bancária', 'bank'], ['dados', 'Importar dados', 'file-arrow-up']]],
+  ];
+  const NOMES = Object.fromEntries(NAV.flatMap(([, itens]) => itens.map(([v, n]) => [v, n])));
+  $$('[data-nav]').forEach((nav) => nav.replaceChildren(...NAV.flatMap(([grupo, itens]) => [
+    h('span', { class: 'nav-label', text: grupo }),
+    ...itens.map(([v, n, i]) => h('a', { href: '#' + v, 'data-view': v }, icon(i), h('span', { text: n })))])));
   const done = new Set();
   let atual = null;
   function route() {
@@ -941,6 +1288,7 @@
     $('#where').textContent = NOMES[view];
     document.title = `${NOMES[view]} · Caixa Novo · Mundo Novo`;
     if (!done.has(view)) { safe($('#' + view), VIEWS[view]); done.add(view); }
+    if ($('#boot')) { $('#boot').remove(); $('#main').removeAttribute('aria-busy'); }
     if (atual && atual !== view) { $('#main').focus({ preventScroll: true }); window.scrollTo(0, 0); }
     if (view === 'receber' && arg) requestAnimationFrame(() => $('#r-clientes').scrollIntoView({ block: 'start' }));
     atual = view;
@@ -960,6 +1308,7 @@
   $('#r-cli-more').addEventListener('click', () => { rState.all = true; drawClientes(); });
   $('#r-cartao-more').addEventListener('click', () => { rState.cartaoAll = true; drawCartao(); });
   $('#p-more').addEventListener('click', () => { pAll = true; drawPagarAbertos(); });
+  $('#p-filtro-limpar').addEventListener('click', () => { pDia = null; renderPagarCal(); drawPagarAbertos(); });
   $('#c-dia').addEventListener('change', (e) => { cDia = e.target.value; renderFechamento(); });
   let tl;
   $('#l-q').addEventListener('input', (e) => { clearTimeout(tl); tl = setTimeout(() => { lState.q = e.target.value; lState.n = 50; drawLanc(); }, 150); });
@@ -994,6 +1343,31 @@
   try { tema = localStorage.getItem('mn-tema') || 'auto'; } catch (e) { tema = 'auto'; }
   if (tema !== 'auto') { document.documentElement.setAttribute('data-theme', tema); $$('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === tema))); }
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.hasAttribute('data-theme')) for (const v of done) safe($('#' + v), VIEWS[v]); });
+
+  // Menu lateral recolhível; a escolha fica guardada neste navegador
+  const app = $('.app'), rec = $('#recolher');
+  function aplicarMenu(mini, guardar) {
+    app.classList.toggle('mini', mini);
+    rec.setAttribute('aria-expanded', String(!mini));
+    $('span', rec).textContent = mini ? 'Abrir menu' : 'Recolher menu';
+    rec.title = mini ? 'Abrir menu' : '';
+    $$('.side .nav a').forEach((a) => { if (mini) a.title = $('span', a).textContent; else a.removeAttribute('title'); });
+    if (guardar) try { localStorage.setItem('mn-menu', mini ? 'mini' : 'aberto'); } catch (e) { /* sem armazenamento */ }
+  }
+  rec.addEventListener('click', () => aplicarMenu(!app.classList.contains('mini'), true));
+  let menu = null;
+  try { menu = localStorage.getItem('mn-menu'); } catch (e) { menu = null; }
+  aplicarMenu(menu ? menu === 'mini' : innerWidth <= 1180, false);
+
+  // De onde vêm os dados: exemplo inventado ou planilha importada
+  function atualizarFonte() {
+    const n = Object.keys(IMPORT_META).length;
+    const tudo = n === FONTES.length;
+    const txt = n === 0 ? 'Dados de exemplo' : tudo ? 'Dados importados' : `${int(n)} de ${int(FONTES.length)} fontes importadas`;
+    $$('[data-fonte]').forEach((a) => { a.classList.toggle('real', tudo); a.setAttribute('aria-label', `${txt}. Abrir Importar dados`); a.title = tudo ? 'Todas as fontes vêm de planilhas importadas' : 'Parte do painel usa dados de exemplo, inventados'; });
+    $$('[data-fonte-txt]').forEach((s) => { s.textContent = txt; });
+  }
+  atualizarFonte();
 
   // Contagem de vencidos no menu (fila que pede ação)
   atualizarContagem();
