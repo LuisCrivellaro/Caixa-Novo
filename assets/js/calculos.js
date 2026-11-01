@@ -461,3 +461,132 @@ dash.calc('pagadores', {
     });
   },
 });
+
+// ------- Contas financeiras, cadastros e relatórios -------
+// Valores somados em centavos; só a saída vira reais.
+
+dash.calc('contas_resumo', {
+  title: 'Resumo por conta',
+  description: 'Saldo de hoje de cada conta, entradas e saídas realizadas nos últimos 30 dias e a data do último lançamento.',
+  inputs: ['contas', 'lancamentos'],
+  fn: (contas, lancamentos) => {
+    const hoje = contas[0].data_saldo;
+    const ini = new Date(Date.parse(hoje) - 29 * 864e5).toISOString().slice(0, 10);
+    const total = contas.reduce((s, c) => s + Number(c.saldo_centavos), 0);
+    return contas.map((c) => {
+      const ls = lancamentos.filter((l) => l.conta === c.conta && l.data <= hoje);
+      const em30 = ls.filter((l) => l.data >= ini);
+      const soma = (tipo) => em30.filter((l) => l.tipo === tipo).reduce((s, l) => s + Number(l.valor_centavos), 0);
+      const saldo = Number(c.saldo_centavos);
+      return {
+        conta: c.conta, tipo: c.tipo, data_saldo: c.data_saldo, saldo: saldo / 100,
+        participacao: total ? saldo / total : null,
+        entradas_30d: soma('entrada') / 100, saidas_30d: soma('saida') / 100,
+        lancamentos: ls.length, ultimo: ls.reduce((a, l) => (l.data > a ? l.data : a), ''),
+      };
+    });
+  },
+});
+
+dash.calc('extrato_contas', {
+  title: 'Extrato por conta',
+  description: 'Lançamentos realizados de cada conta, do mais recente para o mais antigo, com o valor com sinal (entrada positiva, saída negativa). Não traz saldo dia a dia: as transferências entre contas ainda não estão nas fontes.',
+  inputs: ['contas', 'lancamentos'],
+  fn: (contas, lancamentos) => {
+    const hoje = contas[0].data_saldo;
+    const nomes = new Set(contas.map((c) => c.conta));
+    return lancamentos
+      .filter((l) => nomes.has(l.conta) && l.data <= hoje)
+      .map((l) => ({ conta: l.conta, id: l.id, data: l.data, tipo: l.tipo, categoria: l.categoria, descricao: l.descricao, contraparte: l.contraparte, forma: l.forma, valor: Number(l.valor_centavos) * (l.tipo === 'saida' ? -1 : 1) / 100 }))
+      .sort((a, b) => b.data.localeCompare(a.data) || String(b.id).localeCompare(String(a.id)));
+  },
+});
+
+dash.calc('titulos_receber', {
+  title: 'Títulos a receber',
+  description: 'Todos os títulos a receber, em aberto e recebidos, com a situação e os dias de atraso na data de hoje (ou no recebimento).',
+  inputs: ['contas', 'receber'],
+  fn: (contas, receber) => {
+    const hoje = contas[0].data_saldo;
+    const dias = (a, b) => Math.round((Date.parse(a) - Date.parse(b)) / 864e5);
+    return receber.map((r) => ({
+      id: r.id, pedido: r.pedido, cliente_id: r.cliente_id, cliente: r.cliente, forma: r.forma, parcela: r.parcela,
+      emissao: r.emissao, vencimento: r.vencimento, pago_em: r.pago_em || null, valor: Number(r.valor_centavos) / 100,
+      situacao: r.pago_em ? 'Recebido' : r.vencimento < hoje ? 'Vencido' : r.vencimento === hoje ? 'Vence hoje' : 'A vencer',
+      atraso: Math.max(0, r.pago_em ? dias(r.pago_em, r.vencimento) : dias(hoje, r.vencimento)),
+      vendedor: r.vendedor || '', rota: r.rota || '',
+    })).sort((a, b) => b.vencimento.localeCompare(a.vencimento) || String(a.id).localeCompare(String(b.id)));
+  },
+});
+
+dash.calc('titulos_pagar', {
+  title: 'Títulos a pagar',
+  description: 'Todos os títulos a pagar, em aberto e pagos, com abatimento, valor líquido e situação na data de hoje.',
+  inputs: ['contas', 'pagar'],
+  fn: (contas, pagar) => {
+    const hoje = contas[0].data_saldo;
+    return pagar.map((r) => ({
+      id: r.id, fornecedor: r.fornecedor, categoria: r.categoria, documento: r.documento, emissao: r.emissao, vencimento: r.vencimento,
+      pago_em: r.pago_em || null, valor: Number(r.valor_centavos) / 100, abatimento: Number(r.abatimento_centavos) / 100,
+      liquido: (Number(r.valor_centavos) - Number(r.abatimento_centavos)) / 100, motivo_abatimento: r.motivo_abatimento || '',
+      situacao: r.pago_em ? 'Pago' : r.vencimento < hoje ? 'Vencido' : r.vencimento === hoje ? 'Vence hoje' : 'A vencer',
+    })).sort((a, b) => b.vencimento.localeCompare(a.vencimento) || String(a.id).localeCompare(String(b.id)));
+  },
+});
+
+dash.calc('cadastro_clientes', {
+  title: 'Clientes',
+  description: 'Cada cliente com limite de crédito, valor em aberto, vencido, uso do limite, última compra, recebido em 90 dias e nota de pagador.',
+  inputs: ['contas', 'clientes', 'receber', 'pagadores'],
+  fn: (contas, clientes, receber, pagadores) => {
+    const hoje = contas[0].data_saldo;
+    const ini90 = new Date(Date.parse(hoje) - 90 * 864e5).toISOString().slice(0, 10);
+    const por = {};
+    receber.forEach((r) => {
+      const a = por[r.cliente_id] || (por[r.cliente_id] = { aberto: 0, vencido: 0, titulos: 0, recebido90: 0, ultima: '' });
+      const v = Number(r.valor_centavos);
+      if (!r.pago_em) { a.aberto += v; a.titulos += 1; if (r.vencimento < hoje) a.vencido += v; }
+      else if (r.pago_em >= ini90) a.recebido90 += v;
+      if (r.emissao > a.ultima) a.ultima = r.emissao;
+    });
+    const notas = Object.fromEntries(pagadores.map((p) => [p.cliente_id, p]));
+    return clientes.map((c) => {
+      const a = por[c.id] || { aberto: 0, vencido: 0, titulos: 0, recebido90: 0, ultima: '' };
+      const limite = Number(c.limite_centavos);
+      const p = notas[c.id];
+      return {
+        id: c.id, nome: c.nome, tipo: c.tipo || '', rota: c.rota || '', vendedor: c.vendedor || '', limite: limite / 100,
+        aberto: a.aberto / 100, vencido: a.vencido / 100, titulos_abertos: a.titulos, recebido_90d: a.recebido90 / 100,
+        uso_limite: limite ? a.aberto / limite : null, ultima_compra: a.ultima || null,
+        nota: p ? p.nota : 'Sem histórico', nota_ordem: p ? p.ordem : 3,
+      };
+    }).sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
+  },
+});
+
+dash.calc('cadastro_fornecedores', {
+  title: 'Fornecedores',
+  description: 'Cada fornecedor dos títulos a pagar com a categoria de maior valor, valor líquido em aberto, vencido, próximo vencimento, pago e abatido nos últimos 90 dias.',
+  inputs: ['contas', 'pagar'],
+  fn: (contas, pagar) => {
+    const hoje = contas[0].data_saldo;
+    const ini90 = new Date(Date.parse(hoje) - 90 * 864e5).toISOString().slice(0, 10);
+    const por = {};
+    pagar.forEach((r) => {
+      const a = por[r.fornecedor] || (por[r.fornecedor] = { cats: {}, aberto: 0, vencido: 0, titulos: 0, proximo: '', pago90: 0, abat90: 0 });
+      const liq = Number(r.valor_centavos) - Number(r.abatimento_centavos);
+      a.cats[r.categoria] = (a.cats[r.categoria] || 0) + Number(r.valor_centavos);
+      if (!r.pago_em) {
+        a.aberto += liq; a.titulos += 1;
+        if (r.vencimento < hoje) a.vencido += liq;
+        else if (!a.proximo || r.vencimento < a.proximo) a.proximo = r.vencimento;
+      } else if (r.pago_em >= ini90) a.pago90 += liq;
+      if (r.emissao >= ini90) a.abat90 += Number(r.abatimento_centavos);
+    });
+    return Object.entries(por).map(([nome, a]) => ({
+      id: nome, nome, categoria: Object.entries(a.cats).sort((x, y) => y[1] - x[1])[0][0],
+      aberto: a.aberto / 100, vencido: a.vencido / 100, titulos_abertos: a.titulos, proximo_vencimento: a.proximo || null,
+      pago_90d: a.pago90 / 100, abatimentos_90d: a.abat90 / 100,
+    })).sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
+  },
+});
