@@ -3,6 +3,59 @@
 window.CALCULOS = {};
 const dash = { calc: (id, o) => { window.CALCULOS[id] = o; } };
 
+// Consultas do frontend. Dinheiro permanece em centavos inteiros até a apresentação.
+dash.calc('titulos_consulta', {
+  title: 'Títulos e situação', inputs: ['contas', 'receber', 'pagar', 'clientes'],
+  fn: (contas, receber, pagar, clientes) => {
+    const hoje = contas[0].data_saldo;
+    const nomes = new Map(clientes.map(c => [c.id, c.nome]));
+    const converter = (r, tipo) => ({
+      id: r.id, tipo, contraparte: tipo === 'A receber' ? nomes.get(r.cliente_id) || r.cliente || r.cliente_id : r.fornecedor,
+      documento: r.documento || r.pedido || r.id, categoria: r.categoria || r.forma || 'Sem categoria',
+      emissao: r.emissao, vencimento: r.vencimento, pago_em: r.pago_em,
+      valor_centavos: Number(r.valor_centavos), abatimento_centavos: Number(r.abatimento_centavos || 0),
+      liquido_centavos: Number(r.valor_centavos) - Number(r.abatimento_centavos || 0),
+      motivo: r.motivo_abatimento || '', forma: r.forma || '',
+      situacao: r.pago_em ? (tipo === 'A receber' ? 'Recebido' : 'Pago') : r.vencimento < hoje ? 'Vencido' : r.vencimento === hoje ? 'Vence hoje' : 'A vencer',
+    });
+    return [...receber.map(r => converter(r, 'A receber')), ...pagar.map(r => converter(r, 'A pagar'))];
+  },
+});
+dash.calc('contas_consulta', {
+  title: 'Contas financeiras', inputs: ['contas'],
+  fn: contas => contas.map(c => ({ ...c, saldo_centavos: Number(c.saldo_centavos) })),
+});
+dash.calc('movimentos_consulta', {
+  title: 'Extrato de movimentos', inputs: ['lancamentos'],
+  fn: rows => rows.map(r => ({ ...r, valor_centavos: Number(r.valor_centavos), assinado_centavos: (r.tipo === 'saida' ? -1 : r.tipo === 'entrada' ? 1 : 0) * Number(r.valor_centavos) })),
+});
+dash.calc('pessoas_consulta', {
+  title: 'Clientes e fornecedores', inputs: ['clientes', 'pagar'],
+  fn: (clientes, pagar) => [
+    ...clientes.map(c => ({ id: c.id, nome: c.nome, tipo: 'Cliente', grupo: c.tipo || '—', rota: c.rota || '—', vendedor: c.vendedor || '—', limite_centavos: Number(c.limite_centavos || 0) })),
+    ...[...new Set(pagar.map(p => p.fornecedor))].map(nome => ({ id: nome, nome, tipo: 'Fornecedor', grupo: 'Fornecedor', rota: '—', vendedor: '—', limite_centavos: null })),
+  ],
+});
+dash.calc('categorias_consulta', {
+  title: 'Categorias utilizadas', inputs: ['lancamentos', 'pagar'],
+  fn: (movimentos, pagar) => {
+    const grupos = new Map();
+    for (const r of [...movimentos, ...pagar.map(p => ({ ...p, tipo: 'saida' }))]) {
+      const key = r.tipo + '|' + r.categoria;
+      if (!grupos.has(key)) grupos.set(key, { categoria: r.categoria, tipo: r.tipo === 'entrada' ? 'Entrada' : 'Saída', registros: 0 });
+      grupos.get(key).registros++;
+    }
+    return [...grupos.values()];
+  },
+});
+dash.calc('resultado_mes', {
+  title: 'Resultado de caixa no mês', inputs: ['contas', 'lancamentos'],
+  fn: (contas, movimentos) => {
+    const hoje = contas[0].data_saldo;
+    return [{ valor_centavos: movimentos.filter(r => r.data >= hoje.slice(0, 7) + '-01' && r.data <= hoje).reduce((sum, r) => sum + (r.tipo === 'entrada' ? Number(r.valor_centavos) : r.tipo === 'saida' ? -Number(r.valor_centavos) : 0), 0) }];
+  },
+});
+
 dash.calc('resumo', {
   title: 'Resumo do caixa',
   description: 'Saldo, entradas e saídas do dia e do mês, vencimentos, vencidos, prazos médios, limite de crédito, último fechamento e o saldo mínimo de referência (R$ 120.000,00).',

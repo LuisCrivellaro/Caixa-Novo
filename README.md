@@ -4,7 +4,7 @@ Painel interno de caixa da Mundo Novo, distribuidora de frutas em Rondonópolis.
 
 > Este repositório é público e traz só dados de exemplo, inventados. Os dados reais importados pela tela Importar dados ficam no navegador de quem importou e nunca entram no repositório. Não faça commit de planilhas ou extratos reais.
 
-Telas: visão geral, fluxo de caixa, a receber, a pagar, fechamento da gaveta, lançamentos e indicadores. Funciona no computador e no celular, com tema claro e escuro.
+Telas: visão geral, fluxo de caixa, a receber, a pagar, fechamento da gaveta, lançamentos, indicadores, contas financeiras, clientes e fornecedores, categorias, relatórios, conciliação, importação e configurações. Funciona no computador, tablet e celular, com tema claro e escuro.
 
 Os dados em `dados/` são **de exemplo**, gerados por `scripts/gerar_dados.py`. Nenhum número é real ainda.
 
@@ -14,6 +14,13 @@ Os dados em `dados/` são **de exemplo**, gerados por `scripts/gerar_dados.py`. 
 - **Nota de pagador** (A receber): classifica cada cliente pelos títulos que venceram nos últimos 180 dias, sem cartão. Paga em dia: 90% ou mais pagos até 2 dias depois do vencimento e nenhum atraso acima de 15 dias. Costuma atrasar: menos de 75% em dia com atraso médio de 5 dias ou mais, ou algum atraso acima de 60 dias. Sem histórico: menos de 3 títulos. Os critérios ficam no cálculo `pagadores`, em `calculos.js`.
 - **Conciliação bancária**: importa o extrato (OFX, CSV ou Excel) de uma conta e confere cada linha com os lançamentos. Bate quando o valor é igual ao centavo e a data fica a até 3 dias de diferença. Mostra o que bateu, o que só está no extrato e o que só está no sistema. Há um extrato de exemplo para testar.
 - **Importar dados**: troca os dados de exemplo pelos reais, uma fonte por vez, a partir de Excel ou CSV. O painel sugere qual coluna do arquivo vai em cada campo, mostra um exemplo lido e quantas linhas não deram para ler, e só aplica depois da conferência. Os dados importados ficam guardados no navegador (localStorage) e cada fonte pode voltar ao exemplo.
+- **Títulos e detalhes**: consulte títulos recebidos/pagos e em aberto, com pesquisa, situação, datas, abatimentos e movimentos vinculados quando a fonte tiver essa relação.
+- **Relatórios**: movimentações, títulos e fluxo de caixa com filtros, ordenação, paginação e exportação CSV de todos os registros filtrados. O arquivo identifica a origem de exemplo/importada dos dados.
+- **Contas financeiras**: saldos informados pelas fontes, com acesso aos movimentos de cada conta. O extrato não reconstrói nem modifica os saldos.
+
+O aviso de origem aparece em todas as telas: exemplos, fontes mistas ou dados totalmente importados. Importar uma fonte substitui seus registros após confirmação; não faz inclusão incremental. Voltar ao exemplo também exige confirmação.
+
+O projeto não tem backend. Cadastro/edição, baixas de pagamentos/recebimentos, transferências, estornos e pagamentos parciais ainda dependem de uma API com persistência e histórico; essas operações não são simuladas pela interface.
 
 Para ler Excel, o painel carrega o SheetJS 0.18.5 do cdnjs na primeira vez que alguém importa um .xlsx. CSV e OFX são lidos sem nada externo.
 
@@ -34,11 +41,15 @@ index.html                 telas e textos fixos
 assets/css/styles.css      cores, fontes, caixas e versão de celular
 assets/js/calculos.js      todos os cálculos do caixa
 assets/js/app.js           carga dos dados, rotas, telas e filtros
+assets/js/ui.js            tabelas, diálogos, status, mensagens e exportações
+assets/js/workspace.js     consultas de gestão, títulos e relatórios
 assets/js/charts.js        gráficos em SVG (da taste-skill, licença MIT)
 assets/img/                logo
 dados/*.json               dados de exemplo
 scripts/gerar_dados.py     gera os dados de exemplo
 scripts/montar_arquivo_unico.py   gera dist/caixa-novo.html, tudo num arquivo
+tests/                     testes financeiros e de integração no navegador
+docs/FRONTEND_ARCHITECTURE.md   arquitetura, design system, validação e pendências
 ```
 
 ## Regras do projeto
@@ -63,9 +74,24 @@ Datas no formato `AAAA-MM-DD`. `pago_em` vazio (`null`) quer dizer em aberto.
 
 ## Visual
 
-- Cores da marca: laranja do logo `#FE7D01`, laranja para gráficos e textos `#B85605` (claro) e `#FF9A3D` (escuro), verde para o que entra.
+- Fundo bege `#F5F3EE`, cards brancos, bordas discretas e sidebar compacta. Laranja do logo `#FE7D01`, destaque `#B85605` no tema claro e `#FF9A3D` no escuro, verde positivo `#35713D` e vermelho negativo `#BE473F`.
 - Fontes: Red Hat Display nos títulos e números grandes, Red Hat Text no resto, Birthstone só na frase "Rondonópolis, há 35 anos".
-- Regras de tela de trabalho da taste-skill: cor nos dados e não no menu, números alinhados à direita com algarismos de largura fixa, sem gradientes nem sombras em caixas paradas.
+- Gráficos existentes da taste-skill preservados. Cor nos dados, menu neutro com marcador discreto, números alinhados à direita, algarismos de largura fixa e sombras suaves.
+
+## Verificar e gerar a entrega
+
+```sh
+npm install
+npm run check
+npm test
+npm run build
+```
+
+O build gera `dist/caixa-novo.html`, com scripts, estilos, logo e dados de exemplo embutidos. Não publica o projeto.
+
+Para os testes de integração: instale o Chromium com `npx playwright install chromium` caso ele não esteja disponível e execute `npm run test:browser`. O teste abre e fecha seu próprio servidor local, verifica as telas em desktop/tablet/celular e gera capturas em `test-results/`.
+
+Não há TypeScript ou configuração de ESLint. `npm run check` verifica sintaxe JavaScript. Consulte [a arquitetura do frontend](docs/FRONTEND_ARCHITECTURE.md) para componentes, decisões e limitações.
 
 ## Próximos passos
 

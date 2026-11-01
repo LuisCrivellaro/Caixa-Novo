@@ -15,15 +15,23 @@
     console.error(e);
     const m = document.getElementById('main');
     m.replaceChildren(Object.assign(document.createElement('p'), { className: 'err', textContent: 'Não foi possível carregar os dados. Abra o projeto por um servidor local (veja o README) em vez de abrir o arquivo direto.' }));
+    m.append(Object.assign(document.createElement('button'), { className: 'btn btn-ghost', textContent: 'Tentar novamente', onclick: () => location.reload() }));
+    m.setAttribute('aria-busy', 'false');
+    document.getElementById('app-loading').hidden = true;
     return;
   }
   const EXEMPLO = { ...DATA };
   const IMPORT_META = {};
+  const avisosFontes = [];
   for (const n of FONTES) {
     try {
       const raw = localStorage.getItem('mn-fonte-' + n);
-      if (raw) { const o = JSON.parse(raw); if (Array.isArray(o.rows) && o.rows.length) { DATA[n] = o.rows; IMPORT_META[n] = o.meta; } }
-    } catch (e) { /* sem armazenamento: segue com o exemplo */ }
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (!Array.isArray(o.rows) || !o.rows.length || !o.meta) throw new Error('Fonte armazenada inválida');
+        DATA[n] = o.rows; IMPORT_META[n] = o.meta;
+      }
+    } catch (e) { avisosFontes.push(n); }
   }
 
   // Os mesmos cálculos do painel anterior, em centavos inteiros, rodando aqui sem servidor
@@ -57,7 +65,13 @@
   const dCurta = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
   const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   const SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-  let HOJE = DATA.contas[0].data_saldo;
+  let HOJE = DATA.contas[0]?.data_saldo;
+  if (!HOJE) {
+    document.getElementById('main').replaceChildren(Object.assign(document.createElement('p'), { className: 'err', textContent: 'A fonte de contas precisa de uma conta com data de saldo válida. Corrija a fonte e recarregue o painel.' }));
+    document.getElementById('main').setAttribute('aria-busy', 'false');
+    document.getElementById('app-loading').hidden = true;
+    return;
+  }
   const addDias = (iso, n) => new Date(Date.parse(iso) + n * 864e5).toISOString().slice(0, 10);
   const quando = (iso) => (iso === HOJE ? 'Hoje' : iso === addDias(HOJE, 1) ? 'Amanhã' : SEMANA[new Date(Date.parse(iso)).getUTCDay()].replace(/^./, (c) => c.toUpperCase()) + ' ' + dCurta(iso));
   const R = (rows, m, k = 'metrica') => { const r = rows.find((x) => x[k] === m); return r ? r.valor : null; };
@@ -115,13 +129,20 @@
 
     const contas = get('saldo_contas');
     $('#g-strip').replaceChildren(
-      kpi('Saldo disponível hoje', brl(R(res, 'saldo_disponivel')), 'Caixa da loja, bancos e aplicação', { lead: true, cls: sinal(R(res, 'saldo_disponivel')) }),
-      ...contas.map((c) => kpi(c.conta, brl(c.saldo), c.tipo, { cls: c.saldo === 0 ? 'zero' : sinal(c.saldo) })));
+      kpi('Saldo disponível', brl(R(res, 'saldo_disponivel')), `${contas.length} contas · posição de ${dCurta(HOJE)}`, { cls: sinal(R(res, 'saldo_disponivel')) }),
+      kpi('Entradas no mês', brlS(R(res, 'entradas_mes')), 'Realizadas · ' + pctS(R(res, 'variacao_entradas')) + ' vs. período anterior', { cls: sinal(R(res, 'entradas_mes')) }),
+      kpi('Saídas no mês', brlS(-R(res, 'saidas_mes')), 'Realizadas · ' + pctS(R(res, 'variacao_saidas')) + ' vs. período anterior', { cls: sinal(-R(res, 'saidas_mes')) }),
+      kpi('Resultado do mês', CaixaUI.currency(get('resultado_mes')[0].valor_centavos), 'Entradas menos saídas realizadas', { cls: sinal(get('resultado_mes')[0].valor_centavos) }));
+    $('#g-secondary').replaceChildren(
+      kpi('A receber', brlS(R(res, 'receber_aberto')), 'Carteira em aberto', { cls: sinal(R(res, 'receber_aberto')) }),
+      kpi('A pagar', brlS(-R(res, 'pagar_aberto')), 'Valor líquido em aberto', { cls: sinal(-R(res, 'pagar_aberto')) }),
+      kpi('Recebimentos vencidos', brl(R(res, 'vencidos_valor')), int(R(res, 'vencidos_qtd')) + ' títulos em atraso', { cls: R(res, 'vencidos_valor') > 0 ? 'neg' : '' }),
+      kpi('Previsão em 30 dias', brl(marcos.find(m => m.marco === '30').saldo), 'Somente títulos já lançados', { cls: sinal(marcos.find(m => m.marco === '30').saldo) }));
 
     const p30 = marcos.find((m) => m.marco === '30');
     $('#kt-saldo-v').textContent = brl(p30.saldo);
     $('#kt-saldo-v').className = 'kpi-value ' + sinal(p30.saldo);
-    const resMes = R(res, 'entradas_mes') - R(res, 'saidas_mes');
+    const resMes = get('resultado_mes')[0].valor_centavos / 100;
     $('#kt-fluxo-v').textContent = brlS(resMes);
     $('#kt-fluxo-v').className = 'kpi-value ' + sinal(resMes);
     drawGeralChart();
@@ -163,7 +184,7 @@
     const el = $('#g-chart'), note = $('#g-chart-note'), legend = $('#g-chart-legend');
     legend.replaceChildren();
     tingir(el);
-    $$('.ktab').forEach((t) => t.setAttribute('aria-selected', String(t.id === 'kt-' + chartTab)));
+    $$('.ktab').forEach((t) => { const selected = t.id === 'kt-' + chartTab; t.setAttribute('aria-selected', String(selected)); t.tabIndex = selected ? 0 : -1; });
     el.setAttribute('aria-labelledby', 'kt-' + chartTab);
     safe(el, () => {
       if (chartTab === 'saldo') {
@@ -197,6 +218,7 @@
   // ------- FLUXO -------
   let grao = 'semana';
   function renderFluxo() {
+    workspace.renderFlowTable();
     const res = get('resumo');
     const mes = MESES[Number(HOJE.slice(5, 7)) - 1];
     $('#f-finding').replaceChildren(`Em ${mes}, até hoje, entraram `, forte(1, brl(R(res, 'entradas_mes'))), ' e saíram ', forte(-1, brl(R(res, 'saidas_mes'))), '. O resultado de caixa do mês é ', h('span', { class: 'band', text: brlS(R(res, 'entradas_mes') - R(res, 'saidas_mes')) }), '.');
@@ -237,6 +259,7 @@
   const rState = { q: '', only: false, limite: false, nota: '', sort: 'vencido', dir: -1, all: false, cartaoAll: false };
   const NOTA_PILL = { 'Paga em dia': 'pill-pos', 'Atrasa às vezes': 'pill-warn', 'Costuma atrasar': 'pill-neg', 'Sem histórico': 'pill-neutral' };
   function renderReceber() {
+    workspace.renderTitles('A receber', 'r-titulos');
     const res = get('resumo'), ind = get('indicadores'), aging = get('aging');
     const inad = R(ind, 'inadimplencia', 'indicador');
     const velho = aging.filter((a) => a.ordem >= 3).reduce((s, a) => s + Math.round(a.valor * 100), 0) / 100;
@@ -309,6 +332,7 @@
   // ------- A PAGAR -------
   let pAll = false;
   function renderPagar() {
+    workspace.renderTitles('A pagar', 'p-titulos');
     const res = get('resumo'), dias35 = get('pagar_dias');
     const pico = dias35.reduce((a, r) => (r.valor > a.valor ? r : a), dias35[0]);
     $('#p-finding').replaceChildren('Vencem ', forte(-1, brl(R(res, 'pagar_7_dias'))), ' nos próximos 7 dias e ', forte(-1, brl(R(res, 'pagar_30_dias'))), ' em 30 dias. O dia mais pesado é ', h('span', { class: 'band', text: `${quando(pico.dia).toLowerCase()}, com ${brl(pico.valor)}` }), '.');
@@ -322,7 +346,10 @@
       const max = Math.max(1, ...dias35.map((r) => r.valor));
       cal.replaceChildren(...dias35.map((r) => {
         const k = r.valor / max;
-        const b = h('button', { type: 'button', class: (r.passado ? 'past' : '') + (r.hoje ? ' today' : '') + (k > 0.55 ? ' strong' : ''), 'aria-label': `${dBR(r.dia)}: ${r.valor ? brl(r.valor) + ', ' + int(r.qtd) + (r.qtd === 1 ? ' título' : ' títulos') : 'nada a pagar'}`, title: r.valor ? `${dBR(r.dia)}: ${brl(r.valor)} em ${int(r.qtd)} ${r.qtd === 1 ? 'título' : 'títulos'}` : dBR(r.dia) },
+        const b = h('button', { type: 'button', onclick: () => {
+          const rows = get('pagar_abertos').filter(p => p.vencimento === r.dia);
+          CaixaUI.dialog('Pagamentos de ' + dBR(r.dia), h('div', { class: 'stack' }, ...(rows.length ? rows.map(p => h('p', {}, p.fornecedor + ' · ' + p.documento + ' · ', h('strong', { class: 'neg', text: brlS(-p.liquido) }))) : [h('p', { class: 'empty', text: 'Nenhum título em aberto nesta data.' })])));
+        }, class: (r.passado ? 'past' : '') + (r.hoje ? ' today' : '') + (k > 0.55 ? ' strong' : ''), 'aria-label': `${dBR(r.dia)}: ${r.valor ? brl(r.valor) + ', ' + int(r.qtd) + (r.qtd === 1 ? ' título' : ' títulos') : 'nada a pagar'}`, title: r.valor ? `${dBR(r.dia)}: ${brl(r.valor)} em ${int(r.qtd)} ${r.qtd === 1 ? 'título' : 'títulos'}` : dBR(r.dia) },
           h('span', { class: 'fill', style: `opacity:${r.valor ? (0.1 + 0.85 * k).toFixed(2) : 0}` }),
           h('span', { class: 'd', text: dCurta(r.dia) }),
           h('span', { class: 'v', text: r.valor ? MENOS + brlC(r.valor) : '' }));
@@ -411,14 +438,16 @@
       s.setAttribute('aria-label', s.dataset.all);
     });
     $('#l-meta').textContent = `${int(rows.length)} nos últimos 90 dias`;
-    $('#l-de').min = rows[0].data; $('#l-de').max = HOJE; $('#l-ate').min = rows[0].data; $('#l-ate').max = HOJE;
+    $('#l-de').min = rows[0]?.data || ''; $('#l-de').max = HOJE; $('#l-ate').min = rows[0]?.data || ''; $('#l-ate').max = HOJE;
     drawLanc();
   }
   function drawLanc() {
     const tb = $('#l-body');
     safe(tb, () => {
       const q = lState.q.trim().toLocaleLowerCase('pt-BR');
-      let rows = get('lanc_view').filter((r) => (!lState.tipo || r.tipo === lState.tipo) && (!lState.de || r.data >= lState.de) && (!lState.ate || r.data <= lState.ate) &&
+      const invalid = lState.de && lState.ate && lState.de > lState.ate;
+      $('#l-ate').setCustomValidity(invalid ? 'A data final deve ser igual ou posterior à inicial.' : '');
+      let rows = get('lanc_view').filter((r) => !invalid && (!lState.tipo || r.tipo === lState.tipo) && (!lState.de || r.data >= lState.de) && (!lState.ate || r.data <= lState.ate) &&
         Object.entries(lState.sel).every(([k, v]) => !v || r[k] === v) && (!q || (r.descricao + ' ' + r.contraparte).toLocaleLowerCase('pt-BR').includes(q)));
       const val = (r) => (lState.sort === 'valor' ? (r.tipo === 'saida' ? -r.valor : r.valor) : r[lState.sort]);
       rows = rows.slice().sort((a, b) => { const x = val(a), y = val(b); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'pt-BR')) * lState.dir || b.id.localeCompare(a.id); });
@@ -429,7 +458,11 @@
       $('#l-count').replaceChildren(...(rows.length ? [`Mostrando ${int(show.length)} de ${int(rows.length)} lançamentos. Entradas `, h('span', { class: sinal(ent), text: brlS(ent) }), ', saídas ', h('span', { class: sinal(-sai), text: brlS(-sai) }), '.'] : []));
       tb.replaceChildren(...show.map((r) => h('tr', {},
         h('td', { text: dBR(r.data) }),
-        h('td', { class: 'id' }, h('b', { text: r.descricao }), h('span', { class: 'sub', text: [r.contraparte, r.forma].filter(Boolean).join(', ') })),
+        h('td', { class: 'id' }, h('button', { type: 'button', class: 'entry-detail', text: r.descricao || 'Ver movimentação', onclick: () => {
+          const detail = h('dl', { class: 'kv' });
+          for (const [label, value] of [['Identificação', r.id], ['Data', dBR(r.data)], ['Descrição', r.descricao], ['Cliente / fornecedor', r.contraparte], ['Categoria', r.categoria], ['Conta', r.conta], ['Forma', r.forma], ['Tipo', r.tipo === 'saida' ? 'Saída' : 'Entrada'], ['Valor', brlS(r.tipo === 'saida' ? -r.valor : r.valor)]]) detail.append(h('div', {}, h('dt', { text: label }), h('dd', { text: value || '—' })));
+          CaixaUI.dialog('Detalhes da movimentação', detail);
+        } }), h('span', { class: 'sub', text: [r.contraparte, r.forma].filter(Boolean).join(', ') })),
         h('td', { class: 'hide-sm', text: r.categoria }),
         h('td', { class: 'hide-sm', text: r.conta }),
         h('td', { class: 'num ' + sinal(r.tipo === 'saida' ? -r.valor : r.valor), text: r.tipo === 'saida' ? brlS(-r.valor) : brlS(r.valor) }))));
@@ -506,7 +539,7 @@
   const semAcento = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const norm = (s) => semAcento(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   const isoDe = (y, m, d) => { const dt = new Date(Date.UTC(y, m - 1, d)); return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d ? dt.toISOString().slice(0, 10) : null; };
-  const hojeReal = () => new Date().toLocaleDateString('sv');
+  const hojeReal = () => new Date().toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' });
   function lerData(v) {
     if (v == null || v === '') return null;
     if (typeof v === 'number') {
@@ -771,20 +804,28 @@
     try { localStorage.setItem('mn-fonte-' + n, JSON.stringify({ meta: IMPORT_META[n], rows: DATA[n] })); return true; } catch (e) { return false; }
   }
   function aplicarImportacao(n, linhas, arquivo) {
+    CaixaUI.dialog('Aplicar a fonte conferida?', h('p', { text: `${FONTES_DEF[n].nome}: ${int(linhas.length)} registros de ${arquivo} substituirão a fonte atual neste navegador. Confira se o arquivo contém a fonte completa, pois a importação não acrescenta registros à base anterior.` }), { label: 'Aplicar importação', confirm: () => confirmarImportacao(n, linhas, arquivo) });
+  }
+  function confirmarImportacao(n, linhas, arquivo) {
     DATA[n] = linhas;
     IMPORT_META[n] = { arquivo, em: hojeReal(), linhas: linhas.length };
     const salvo = guardar(n);
+    if (salvo && avisosFontes.includes(n)) avisosFontes.splice(avisosFontes.indexOf(n), 1);
     recarregar();
     $('#d-map').replaceChildren(h('p', { class: 'map-summary ok', role: 'status' },
       h('strong', { text: `${FONTES_DEF[n].nome}: ${int(linhas.length)} linhas importadas de ${arquivo}.` }),
       h('span', { text: salvo ? 'O painel já está usando estes dados e eles ficam guardados neste navegador.' : 'O painel já está usando estes dados, mas o navegador não tem espaço para guardá-los: ao fechar a página, volta o exemplo.' })));
   }
   function voltarExemplo(n) {
+    CaixaUI.dialog('Substituir os dados importados?', h('p', { text: `A fonte ${FONTES_DEF[n].nome} voltará aos exemplos. Os registros importados serão removidos deste navegador. Guarde seu arquivo original para importar novamente.` }), { label: 'Voltar ao exemplo', confirm: () => confirmarVoltarExemplo(n) });
+  }
+  function confirmarVoltarExemplo(n) {
     DATA[n] = EXEMPLO[n];
     delete IMPORT_META[n];
-    try { localStorage.removeItem('mn-fonte-' + n); } catch (e) { /* nada guardado */ }
+    let removido = true;
+    try { localStorage.removeItem('mn-fonte-' + n); if (avisosFontes.includes(n)) avisosFontes.splice(avisosFontes.indexOf(n), 1); } catch (e) { removido = false; }
     recarregar();
-    $('#d-map').replaceChildren(h('p', { class: 'map-summary', role: 'status', text: `${FONTES_DEF[n].nome} voltou a usar os dados de exemplo.` }));
+    $('#d-map').replaceChildren(h('p', { class: 'map-summary', role: 'status', text: `${FONTES_DEF[n].nome} voltou a usar os dados de exemplo.` + (removido ? '' : ' Não foi possível remover a fonte salva: ela poderá ser recuperada ao recarregar a página. Confira as permissões de armazenamento do navegador.') }));
   }
   $('#d-file').addEventListener('change', async (e) => {
     const f = e.target.files[0];
@@ -915,6 +956,7 @@
     cDia = null; rState.all = false; rState.cartaoAll = false; pAll = false; lState.n = 50; lState.sel = {};
     $$('#lancamentos select[data-col]').forEach((s) => s.replaceChildren());
     atualizarContagem();
+    atualizarOrigem();
     if (!$('#g-resumo').hidden) $('#g-resumo-txt').value = textoResumo();
     atual = null;
     route();
@@ -928,8 +970,21 @@
   }
 
   // ------- ROTAS -------
-  const VIEWS = { geral: renderGeral, fluxo: renderFluxo, receber: renderReceber, pagar: renderPagar, fechamento: renderFechamento, lancamentos: renderLanc, indicadores: renderInd, conciliacao: renderConc, dados: renderDados };
-  const NOMES = { geral: 'Visão geral', fluxo: 'Fluxo de caixa', receber: 'A receber', pagar: 'A pagar', fechamento: 'Fechamento', lancamentos: 'Lançamentos', indicadores: 'Indicadores', conciliacao: 'Conciliação', dados: 'Importar dados' };
+  const origem = () => { const n = Object.keys(IMPORT_META).length; return n === 0 ? 'Dados de exemplo · valores demonstrativos' : n < FONTES.length ? `Fontes mistas · ${n} importadas e ${FONTES.length - n} de exemplo` : 'Dados importados · armazenamento neste navegador'; };
+  function atualizarOrigem() {
+    $('#data-origin').textContent = origem() + (avisosFontes.length ? ' · Não foi possível recuperar fontes salvas: ' + avisosFontes.join(', ') + '. Confira a importação.' : '');
+    $('#workspace-date').textContent = 'Posição financeira · ' + dBR(HOJE);
+  }
+  const workspace = criarWorkspace({ get, posicao: () => HOJE, origem, abrirMovimentos: conta => {
+    Object.assign(lState, { q: '', tipo: '', de: '', ate: '', sel: { conta }, n: 50 });
+    $('#l-q').value = ''; $('#l-tipo').value = ''; $('#l-de').value = ''; $('#l-ate').value = '';
+    $$('#lancamentos select[data-col]').forEach(s => { s.value = ''; });
+    if (!done.has('lancamentos')) { renderLanc(); done.add('lancamentos'); }
+    $('#lancamentos select[data-col="conta"]').value = conta;
+    drawLanc(); location.hash = '#lancamentos';
+  } });
+  const VIEWS = { geral: renderGeral, fluxo: renderFluxo, receber: renderReceber, pagar: renderPagar, fechamento: renderFechamento, lancamentos: renderLanc, indicadores: renderInd, conciliacao: renderConc, dados: renderDados, ...workspace.views };
+  const NOMES = { geral: 'Visão geral', fluxo: 'Fluxo de caixa', receber: 'A receber', pagar: 'A pagar', fechamento: 'Fechamento', lancamentos: 'Lançamentos', indicadores: 'Indicadores', conciliacao: 'Conciliação', dados: 'Importar dados', contas: 'Contas financeiras', pessoas: 'Clientes e fornecedores', categorias: 'Categorias', relatorios: 'Relatórios', configuracoes: 'Configurações' };
   const done = new Set();
   let atual = null;
   function route() {
@@ -937,14 +992,14 @@
     const view = VIEWS[v] ? v : 'geral';
     if (view === 'receber' && arg) { rState.only = arg === 'vencidos'; rState.limite = arg === 'limite'; rState.sort = arg === 'limite' ? 'uso_limite' : 'vencido'; rState.dir = -1; if (done.has('receber')) { $('#r-only').checked = rState.only; drawClientes(); } }
     $$('main > .view').forEach((s) => { s.hidden = s.id !== view; });
-    $$('.nav a').forEach((a) => { if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    $$('a[data-view]').forEach((a) => { if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     $('#where').textContent = NOMES[view];
     document.title = `${NOMES[view]} · Caixa Novo · Mundo Novo`;
     if (!done.has(view)) { safe($('#' + view), VIEWS[view]); done.add(view); }
+    fecharMenu();
     if (atual && atual !== view) { $('#main').focus({ preventScroll: true }); window.scrollTo(0, 0); }
     if (view === 'receber' && arg) requestAnimationFrame(() => $('#r-clientes').scrollIntoView({ block: 'start' }));
     atual = view;
-    fecharMenu();
   }
   window.addEventListener('hashchange', route);
 
@@ -965,7 +1020,7 @@
   $('#l-q').addEventListener('input', (e) => { clearTimeout(tl); tl = setTimeout(() => { lState.q = e.target.value; lState.n = 50; drawLanc(); }, 150); });
   $('#l-tipo').addEventListener('change', (e) => { lState.tipo = e.target.value; lState.n = 50; drawLanc(); });
   $$('#lancamentos select[data-col]').forEach((s) => s.addEventListener('change', () => { lState.sel[s.dataset.col] = s.value; lState.n = 50; drawLanc(); }));
-  for (const [id, k] of [['#l-de', 'de'], ['#l-ate', 'ate']]) $(id).addEventListener('change', (e) => { const v = e.target.value; if (!v || e.target.validity.valid) { lState[k] = v; lState.n = 50; drawLanc(); } });
+  for (const [id, k] of [['#l-de', 'de'], ['#l-ate', 'ate']]) $(id).addEventListener('change', (e) => { e.target.setCustomValidity(''); const v = e.target.value; if (!v || e.target.validity.valid) { lState[k] = v; lState.n = 50; drawLanc(); } });
   $('#l-clear').addEventListener('click', () => {
     Object.assign(lState, { q: '', tipo: '', de: '', ate: '', sel: {}, n: 50 });
     $('#l-q').value = ''; $('#l-tipo').value = ''; $('#l-de').value = ''; $('#l-ate').value = '';
@@ -977,10 +1032,19 @@
 
   // Menu do celular
   const sheet = $('#sheet');
-  function fecharMenu() { sheet.classList.remove('open'); sheet.setAttribute('inert', ''); $('#menu-open').setAttribute('aria-expanded', 'false'); }
-  $('#menu-open').addEventListener('click', () => { sheet.removeAttribute('inert'); sheet.classList.add('open'); $('#menu-open').setAttribute('aria-expanded', 'true'); $('#menu-close').focus(); });
+  function fecharMenu() { sheet.classList.remove('open'); sheet.setAttribute('inert', ''); $('#main').removeAttribute('inert'); $('.topbar').removeAttribute('inert'); document.body.style.overflow = ''; $('#menu-open').setAttribute('aria-expanded', 'false'); }
+  $('#menu-open').addEventListener('click', () => { sheet.removeAttribute('inert'); sheet.classList.add('open'); $('#main').setAttribute('inert', ''); $('.topbar').setAttribute('inert', ''); document.body.style.overflow = 'hidden'; $('#menu-open').setAttribute('aria-expanded', 'true'); $('#menu-close').focus(); });
   $('#menu-close').addEventListener('click', () => { fecharMenu(); $('#menu-open').focus(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet.classList.contains('open')) { fecharMenu(); $('#menu-open').focus(); } });
+  matchMedia('(min-width: 901px)').addEventListener('change', event => { if (event.matches) fecharMenu(); });
+  document.addEventListener('keydown', (e) => {
+    if (!sheet.classList.contains('open')) return;
+    if (e.key === 'Escape') { fecharMenu(); $('#menu-open').focus(); }
+    if (e.key === 'Tab') {
+      const nodes = $$('a[href],button', sheet), first = nodes[0], last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
 
   // Tema
   const aplicarTema = (t) => {
@@ -997,6 +1061,8 @@
 
   // Contagem de vencidos no menu (fila que pede ação)
   atualizarContagem();
-
+  atualizarOrigem();
+  $('#main').setAttribute('aria-busy', 'false');
+  $('#app-loading').hidden = true;
   route();
 })();

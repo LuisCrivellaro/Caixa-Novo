@@ -14,9 +14,9 @@ fontes = ["contas", "clientes", "receber", "pagar", "lancamentos", "fechamentos"
 dados = {n: json.loads((raiz / f"dados/{n}.json").read_text(encoding="utf-8")) for n in fontes}
 dados_js = "window.__DADOS__ = " + json.dumps(dados, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"
 scripts = ""
-for nome in ["charts.js", "calculos.js", "app.js"]:
+for nome in ["charts.js", "calculos.js", "ui.js", "workspace.js", "app.js"]:
     scripts += "<script>\n" + (raiz / "assets/js" / nome).read_text(encoding="utf-8") + "\n</script>\n"
-html = re.sub(r'<script src="assets/js/charts\.js"></script>\s*<script src="assets/js/calculos\.js"></script>\s*<script src="assets/js/app\.js"></script>\n',
+html = re.sub(r'<script src="assets/js/charts\.js"></script>\s*<script src="assets/js/calculos\.js"></script>\s*<script src="assets/js/ui\.js"></script>\s*<script src="assets/js/workspace\.js"></script>\s*<script src="assets/js/app\.js"></script>\n',
               lambda m: "<script>\n" + dados_js + "\n</script>\n" + scripts, html)
 saida = raiz / "dist" / "caixa-novo.html"
 saida.parent.mkdir(exist_ok=True)
