@@ -38,7 +38,7 @@ window.criarWorkspace = ({ get, posicao, origem, abrirMovimentos }) => {
   ];
   modules.forEach(([id, title, description]) => {
     const section = el('section', { id, class: 'view', 'aria-labelledby': 'h-' + id, hidden: '' },
-      el('div', { class: 'title-row' }, el('div', {}, el('span', { class: 'eyebrow', text: 'CAIXA-NOVO / GESTÃO FINANCEIRA' }), el('h1', { id: 'h-' + id, text: title }), el('p', { class: 'finding', text: description }))),
+      el('div', { class: 'title-row' }, el('div', {}, el('h1', { id: 'h-' + id, text: title }), el('p', { class: 'finding', text: description }))),
       el('article', { class: 'card', id: id + '-content' }));
     document.getElementById('main').append(section);
   });
@@ -94,13 +94,15 @@ window.criarWorkspace = ({ get, posicao, origem, abrirMovimentos }) => {
       el('div', { class: 'settings-row' }, el('div', {}, el('h3', { text: 'Posição financeira' }), el('p', { class: 'card-note', text: 'A data de referência vem da fonte de contas: ' + date(posicao()) + '. O painel não representa uma conexão bancária em tempo real.' }))),
       el('div', { class: 'settings-row' }, el('div', {}, el('h3', { text: 'Operações financeiras' }), el('p', { class: 'card-note', text: 'Este projeto consulta arquivos e planilhas. Cadastros, baixas, estornos, transferências e pagamentos parciais dependem de um backend com persistência e histórico.' }))));
   }
-  function renderFlowTable() {
+  const flowTableState = { query: '', sort: null, dir: 1, page: 1, de: '', ate: '', filters: {} };
+  function renderFlowTable(rows, grao) {
     let card = document.getElementById('f-details');
     if (!card) {
       card = el('article', { id: 'f-details', class: 'card' }, el('div', { class: 'card-head' }, el('h2', { text: 'Fluxo por período' }), el('span', { class: 'meta', text: 'O resultado do período não representa o saldo da conta.' })), el('div', { class: 'flow-table' }));
       document.getElementById('fluxo').append(card);
     }
-    dataTable(card.querySelector('.flow-table'), { name: 'Fluxo de caixa', rows: get('fluxo'), dateKey: 'periodo', context: origem(), filters: [{ label: 'Agrupamento', key: 'grao' }, { label: 'Natureza', key: 'natureza' }], columns: [dateColumn('Período', 'periodo'), { label: 'Agrupamento', key: 'grao' }, { label: 'Natureza', key: 'natureza', render: r => badge(r.natureza === 'previsto' ? 'Previsto' : 'Realizado') }, ...['entradas', 'saidas', 'liquido'].map((key, i) => ({ label: ['Entradas', 'Saídas', 'Resultado'][i], key, numeric: true, render: r => currency(Math.round(r[key] * 100)), export: r => r[key].toFixed(2).replace('.', ',') }))] });
+    if (flowTableState.filters.grao) flowTableState.filters.grao = grao;
+    dataTable(card.querySelector('.flow-table'), { name: 'Fluxo de caixa', rows, state: flowTableState, dateKey: 'periodo', context: origem(), filters: [{ label: 'Agrupamento', key: 'grao' }, { label: 'Natureza', key: 'natureza' }], columns: [dateColumn('Período', 'periodo'), { label: 'Agrupamento', key: 'grao' }, { label: 'Natureza', key: 'natureza', render: r => badge(r.natureza === 'previsto' ? 'Previsto' : 'Realizado') }, ...['entradas', 'saidas', 'liquido'].map((key, i) => ({ label: ['Entradas', 'Saídas', 'Resultado'][i], key, numeric: true, render: r => currency(Math.round(r[key] * 100)), export: r => r[key].toFixed(2).replace('.', ',') }))] });
   }
   return { views: { contas: renderContas, pessoas: renderPessoas, categorias: renderCategorias, relatorios: renderRelatorios, configuracoes: renderConfig }, renderTitles: mountTitles, renderFlowTable };
 };

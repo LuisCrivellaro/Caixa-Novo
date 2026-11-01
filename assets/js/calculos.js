@@ -182,7 +182,7 @@ dash.calc('vencimentos_7d', {
 
 dash.calc('fluxo', {
   title: 'Fluxo de caixa por período',
-  description: 'Entradas e saídas realizadas por dia, semana e mês, e previstas pelos títulos em aberto nos próximos 60 dias.',
+  description: 'Entradas e saídas realizadas até a posição, por dia, semana, mês e ano; previstas pelos títulos em aberto nos próximos 60 dias.',
   inputs: ['contas', 'lancamentos', 'receber', 'pagar'],
   fn: (contas, lancamentos, receber, pagar) => {
     const hoje = contas[0].data_saldo;
@@ -190,20 +190,78 @@ dash.calc('fluxo', {
     const semana = (iso) => { const d = new Date(Date.parse(iso)); return new Date(d - ((d.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10); };
     const soma = {};
     const add = (dia, natureza, e, s) => {
-      for (const [grao, periodo] of [['dia', dia], ['semana', semana(dia)], ['mes', dia.slice(0, 7) + '-01']]) {
+      for (const [grao, periodo] of [['dia', dia], ['semana', semana(dia)], ['mes', dia.slice(0, 7) + '-01'], ['ano', dia.slice(0, 4) + '-01-01']]) {
         const k = grao + '|' + periodo + '|' + natureza;
         const a = soma[k] || (soma[k] = { grao, periodo, natureza, entradas: 0, saidas: 0 });
         a.entradas += e;
         a.saidas += s;
       }
     };
-    lancamentos.forEach((r) => add(r.data, 'realizado', r.tipo === 'entrada' ? Number(r.valor_centavos) : 0, r.tipo === 'saida' ? Number(r.valor_centavos) : 0));
+    lancamentos.filter(r => r.data <= hoje && (r.tipo === 'entrada' || r.tipo === 'saida')).forEach((r) => add(r.data, 'realizado', r.tipo === 'entrada' ? Number(r.valor_centavos) : 0, r.tipo === 'saida' ? Number(r.valor_centavos) : 0));
     receber.filter((r) => !r.pago_em && r.vencimento > hoje && r.vencimento <= fim).forEach((r) => add(r.vencimento, 'previsto', Number(r.valor_centavos), 0));
-    pagar.filter((r) => !r.pago_em && r.vencimento > hoje && r.vencimento <= fim).forEach((r) => add(r.vencimento, 'previsto', 0, Number(r.valor_centavos) - Number(r.abatimento_centavos)));
+    pagar.filter((r) => !r.pago_em && r.vencimento > hoje && r.vencimento <= fim).forEach((r) => add(r.vencimento, 'previsto', 0, Number(r.valor_centavos) - Number(r.abatimento_centavos || 0)));
     return Object.values(soma)
-      .map((a) => ({ grao: a.grao, periodo: a.periodo, natureza: a.natureza, entradas: a.entradas / 100, saidas: a.saidas / 100, liquido: (a.entradas - a.saidas) / 100 }))
+      .map((a) => ({ grao: a.grao, periodo: a.periodo, natureza: a.natureza, entradas_centavos: a.entradas, saidas_centavos: a.saidas, liquido_centavos: a.entradas - a.saidas, entradas: a.entradas / 100, saidas: a.saidas / 100, liquido: (a.entradas - a.saidas) / 100 }))
       .sort((a, b) => a.periodo.localeCompare(b.periodo) || b.natureza.localeCompare(a.natureza));
   },
+});
+
+// Janelas de calendário em UTC. A posição vem das contas, nunca do relógio.
+const periodosFluxo = hoje => {
+  const iso = ms => new Date(ms).toISOString().slice(0, 10);
+  const dia = Date.parse(hoje);
+  const semana = dia - ((new Date(dia).getUTCDay() + 6) % 7) * 864e5;
+  const ano = Number(hoje.slice(0, 4)), mes = Number(hoje.slice(5, 7)) - 1;
+  return [
+    { grao: 'dia', inicio: hoje, fim: hoje, anterior_inicio: iso(dia - 864e5), anterior_fim: iso(dia - 864e5) },
+    { grao: 'semana', inicio: iso(semana), fim: iso(semana + 6 * 864e5), anterior_inicio: iso(semana - 7 * 864e5), anterior_fim: iso(semana - 864e5) },
+    { grao: 'mes', inicio: iso(Date.UTC(ano, mes, 1)), fim: iso(Date.UTC(ano, mes + 1, 1) - 864e5), anterior_inicio: iso(Date.UTC(ano, mes - 1, 1)), anterior_fim: iso(Date.UTC(ano, mes, 1) - 864e5) },
+    { grao: 'ano', inicio: `${ano}-01-01`, fim: `${ano}-12-31`, anterior_inicio: `${ano - 1}-01-01`, anterior_fim: `${ano - 1}-12-31` }
+  ].map(periodo => ({ ...periodo, ate: hoje }));
+};
+
+dash.calc('fluxo_comparacao', {
+  title: 'Fluxo realizado por período e categoria',
+  description: 'Período atual até a posição e período anterior completo; tipos separados, valores em centavos e transferências excluídas.',
+  inputs: ['contas', 'lancamentos'],
+  fn: (contas, lancamentos) => {
+    const periodos = periodosFluxo(contas[0].data_saldo);
+    const soma = new Map();
+    for (const movimento of lancamentos) {
+      if (movimento.tipo !== 'entrada' && movimento.tipo !== 'saida') continue;
+      for (const periodo of periodos) {
+        const atual = movimento.data >= periodo.inicio && movimento.data <= periodo.ate;
+        const anterior = movimento.data >= periodo.anterior_inicio && movimento.data <= periodo.anterior_fim;
+        if (!atual && !anterior) continue;
+        const categoria = movimento.categoria || 'Sem categoria';
+        const key = JSON.stringify([periodo.grao, movimento.tipo, categoria]);
+        if (!soma.has(key)) soma.set(key, { grao: periodo.grao, tipo: movimento.tipo, categoria, atual_centavos: 0, anterior_centavos: 0 });
+        const row = soma.get(key);
+        row[atual ? 'atual_centavos' : 'anterior_centavos'] += Number(movimento.valor_centavos);
+      }
+    }
+    return [...soma.values()].sort((a, b) => a.tipo.localeCompare(b.tipo) || b.atual_centavos - a.atual_centavos || a.categoria.localeCompare(b.categoria));
+  }
+});
+
+dash.calc('fluxo_resumo', {
+  title: 'Resumo do fluxo por período',
+  description: 'Entradas, saídas, resultado e variações do mesmo período usado nas categorias. Variação sem base é nula.',
+  inputs: ['contas', 'fluxo_comparacao'],
+  fn: (contas, categorias) => periodosFluxo(contas[0].data_saldo).map(periodo => {
+    const total = (tipo, key) => categorias.filter(row => row.grao === periodo.grao && row.tipo === tipo).reduce((soma, row) => soma + row[key], 0);
+    const entradas_centavos = total('entrada', 'atual_centavos');
+    const saidas_centavos = total('saida', 'atual_centavos');
+    const entradas_anterior_centavos = total('entrada', 'anterior_centavos');
+    const saidas_anterior_centavos = total('saida', 'anterior_centavos');
+    const resultado_centavos = entradas_centavos - saidas_centavos;
+    const resultado_anterior_centavos = entradas_anterior_centavos - saidas_anterior_centavos;
+    const variacao = (atual, anterior) => anterior === 0 ? null : (atual - anterior) / Math.abs(anterior);
+    return { ...periodo, entradas_centavos, saidas_centavos, resultado_centavos, entradas_anterior_centavos, saidas_anterior_centavos, resultado_anterior_centavos,
+      variacao_entradas: variacao(entradas_centavos, entradas_anterior_centavos),
+      variacao_saidas: variacao(saidas_centavos, saidas_anterior_centavos),
+      variacao_resultado: variacao(resultado_centavos, resultado_anterior_centavos) };
+  })
 });
 
 dash.calc('categorias', {

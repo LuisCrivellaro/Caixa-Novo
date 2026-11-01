@@ -30,6 +30,8 @@ O site lê os arquivos de `dados/` com `fetch`, então precisa de um servidor lo
 
 Escolha um dos caminhos:
 
+Execute `npm install` na primeira vez: ele instala as dependências e compila as duas ilhas React locais, BranchedMenu e RubberSegment. As telas e as rotas continuam em JavaScript. Depois, escolha um dos servidores abaixo.
+
 - **Live Server:** instale a extensão recomendada (o VS Code oferece ao abrir a pasta), clique com o botão direito em `index.html` e escolha "Open with Live Server".
 - **Terminal, com Node instalado:** `npm run dev` e abra http://localhost:5173.
 - **Terminal, só com Python:** `python -m http.server 5173` e abra http://localhost:5173.
@@ -44,10 +46,14 @@ assets/js/app.js           carga dos dados, rotas, telas e filtros
 assets/js/ui.js            tabelas, diálogos, status, mensagens e exportações
 assets/js/workspace.js     consultas de gestão, títulos e relatórios
 assets/js/charts.js        gráficos em SVG (da taste-skill, licença MIT)
+assets/components/BranchedMenu/  BranchedMenu.jsx e BranchedMenu.css, base React Bits
+assets/components/navigation.jsx  categorias e integração com o roteador existente
+assets/generated/          JS/CSS compilados do menu (gerados, ignorados pelo Git)
 assets/img/                logo
 dados/*.json               dados de exemplo
 scripts/gerar_dados.py     gera os dados de exemplo
 scripts/montar_arquivo_unico.py   gera dist/caixa-novo.html, tudo num arquivo
+scripts/build-menu.cjs     compila React e Hugeicons localmente com esbuild
 tests/                     testes financeiros e de integração no navegador
 docs/FRONTEND_ARCHITECTURE.md   arquitetura, design system, validação e pendências
 ```
@@ -75,8 +81,14 @@ Datas no formato `AAAA-MM-DD`. `pago_em` vazio (`null`) quer dizer em aberto.
 ## Visual
 
 - Fundo bege `#F5F3EE`, cards brancos, bordas discretas e sidebar compacta. Laranja do logo `#FE7D01`, destaque `#B85605` no tema claro e `#FF9A3D` no escuro, verde positivo `#35713D` e vermelho negativo `#BE473F`.
-- Fontes: Red Hat Display nos títulos e números grandes, Red Hat Text no resto, Birthstone só na frase "Rondonópolis, há 35 anos".
-- Gráficos existentes da taste-skill preservados. Cor nos dados, menu neutro com marcador discreto, números alinhados à direita, algarismos de largura fixa e sombras suaves.
+- Fontes: Red Hat Display nos títulos e números grandes, Red Hat Text no resto e Birthstone exclusivamente na frase institucional do rodapé.
+- Gráficos existentes da taste-skill preservados. Navegação BranchedMenu com ramos curvos e marcador ativo laranja; cores e tipografia acompanham o tema. Números alinhados à direita, algarismos de largura fixa e sombras suaves.
+
+O menu usa a [implementação JavaScript/CSS do BranchedMenu, do React Bits](https://reactbits.dev/c/micro/branched-menu), com Hugeicons nas cinco categorias e nos 14 destinos existentes. Mantém o roteamento por hash, inclusive subrotas e voltar/avançar, e o badge de títulos vencidos. As seções abertas são compartilhadas entre desktop e celular e salvas em `mn-menu-secoes`; a navegação funciona em memória se o armazenamento estiver indisponível. Ao acessar uma página de outra seção recolhida, essa seção abre para mostrar o item ativo.
+
+A sidebar continua com 224px, logo, empresa, frase institucional, atalho de Configurações e temas Auto/Claro/Escuro. A área de navegação tem rolagem própria. A referência e sua licença estão em [docs/licenses/react-bits.md](docs/licenses/react-bits.md).
+
+`npm run dev` recompila o menu ao iniciar. Após editar os arquivos JSX/CSS do componente com o servidor já aberto, execute `npm run build:menu` e atualize o navegador. Os recursos compilados incluem React e os ícones usados; não dependem de CDN para funcionar.
 
 ## Verificar e gerar a entrega
 
@@ -92,6 +104,16 @@ O build gera `dist/caixa-novo.html`, com scripts, estilos, logo e dados de exemp
 Para os testes de integração: instale o Chromium com `npx playwright install chromium` caso ele não esteja disponível e execute `npm run test:browser`. O teste abre e fecha seu próprio servidor local, verifica as telas em desktop/tablet/celular e gera capturas em `test-results/`.
 
 Não há TypeScript ou configuração de ESLint. `npm run check` verifica sintaxe JavaScript. Consulte [a arquitetura do frontend](docs/FRONTEND_ARCHITECTURE.md) para componentes, decisões e limitações.
+
+A [evolução visual do frontend](docs/FRONTEND_POLISH.md) registra a auditoria, os componentes refinados e a comparação das 14 rotas nos temas claro/escuro em cinco larguras. Para novas alterações visuais, `node tests/visual.cjs before` salva uma referência e `node tests/visual.cjs after` verifica layout, contraste e preservação dos valores exibidos. As capturas ficam em `test-results/`.
+
+A [revisão tipográfica](docs/TYPOGRAPHY.md) documenta a escala centralizada, a legibilidade das tabelas e menus, os ajustes dos rótulos SVG e a validação com fontes externas indisponíveis e texto ampliado. Os testes visuais também verificam os tamanhos efetivos por função e o espaçamento entre datas dos gráficos.
+
+## Skills para Claude Code
+
+Seis skills locais estão instaladas em `.claude/skills/`: Frontend Design, Impeccable, Humanizer, Web Design Guidelines, React Best Practices e Webapp Testing. O [guia de skills](docs/skills/README.md) registra fontes oficiais, versões, instalação, comandos, ativação contextual e limites de compatibilidade. `CLAUDE.md` orienta a seleção por tarefa. Verifique a integridade com `node scripts/check-skills.cjs` e recarregue o Claude Code para usar as skills na próxima sessão.
+
+Os hooks do Impeccable permanecem desativados. A instalação das skills não adiciona dependências npm ao aplicativo nem altera seus cálculos, fontes de dados ou visual.
 
 ## Próximos passos
 

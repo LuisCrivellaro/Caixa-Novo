@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F3EE">
 <title>Caixa Novo · Mundo Novo</title>
 <meta name="description" content="Caixa Novo: painel interno de caixa da Mundo Novo, distribuidora de frutas em Rondonópolis.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;600;700&family=Red+Hat+Text:wght@400;500;600&family=Birthstone&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/generated/branched-menu.css">
 </head>
 <body>
 <div id="app-loading" class="app-loading" role="status">Carregando fontes financeiras…</div>
@@ -18,21 +20,7 @@
   <aside class="side" aria-label="Navegação">
     <a class="product-brand" href="#geral" aria-label="Caixa-Novo, visão geral"><span class="product-symbol" aria-hidden="true">c<span>n</span></span><span>Caixa<span class="brand-hyphen">-</span>Novo<small>GESTÃO FINANCEIRA</small></span></a>
     <div class="company"><span class="company-avatar">MN</span><span><b>Mundo Novo</b><small>Distribuidora de frutas</small></span></div>
-    <nav class="nav" aria-label="Telas do caixa"><span class="nav-label">Principal</span>
-        <a href="#geral" data-view="geral"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><span>Visão geral</span></a>
-        <a href="#fluxo" data-view="fluxo"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0v94.37L90.73,98a8,8,0,0,1,10.07-.38l58.81,44.11L218.73,90a8,8,0,1,1,10.54,12l-64,56a8,8,0,0,1-10.07.38L96.39,114.29,40,163.63V200H224A8,8,0,0,1,232,208Z"/></svg><span>Fluxo de caixa</span></a>
-        <span class="nav-label">Financeiro</span><a href="#receber" data-view="receber"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M230.33,141.06a24.43,24.43,0,0,0-21.24-4.23l-41.84,9.62A28,28,0,0,0,140,112H89.94a31.82,31.82,0,0,0-22.63,9.37L44.69,144H16A16,16,0,0,0,0,160v40a16,16,0,0,0,16,16H120a7.93,7.93,0,0,0,1.94-.24l64-16a6.94,6.94,0,0,0,1.19-.4L226,182.82l.44-.2a24.6,24.6,0,0,0,3.93-41.56ZM16,160H40v40H16Zm203.43,8.21-38,16.18L119,200H56V155.31l22.63-22.62A15.86,15.86,0,0,1,89.94,128H140a12,12,0,0,1,0,24H112a8,8,0,0,0,0,16h32a8.32,8.32,0,0,0,1.79-.2l67-15.41.31-.08a8.6,8.6,0,0,1,6.3,15.9ZM164,96a36,36,0,0,0,5.9-.48,36,36,0,1,0,28.22-47A36,36,0,1,0,164,96Zm60-12a20,20,0,1,1-20-20A20,20,0,0,1,224,84ZM164,40a20,20,0,0,1,19.25,14.61,36,36,0,0,0-15,24.93A20.42,20.42,0,0,1,164,80a20,20,0,0,1,0-40Z"/></svg><span>A receber</span></a>
-        <a href="#pagar" data-view="pagar"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"/></svg><span>A pagar</span></a>
-        <a href="#fechamento" data-view="fechamento"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M239.76,158.06,217.28,68.12A16,16,0,0,0,201.75,56H136V40a16,16,0,0,0-16-16H80A16,16,0,0,0,64,40V56H54.25A16,16,0,0,0,38.72,68.12L16.24,158.06A7.93,7.93,0,0,0,16,160v32a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V160A7.93,7.93,0,0,0,239.76,158.06ZM80,40h40V56H80ZM54.25,72h147.5l20,80H34.25ZM32,192V168H224v24ZM64,96a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,96ZM64,128a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,128Z"/></svg><span>Fechamento</span></a>
-        <a href="#lancamentos" data-view="lancamentos"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M80,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H88A8,8,0,0,1,80,64Zm136,56H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Zm0,64H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM44,52A12,12,0,1,0,56,64,12,12,0,0,0,44,52Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,116Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,180Z"/></svg><span>Lançamentos</span></a>
-<a href="#contas" data-view="contas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 7v2h20V7L12 2ZM4 11h3v7H4v-7Zm7 0h2v7h-2v-7Zm6 0h3v7h-3v-7ZM2 20h20v2H2v-2Z"/></svg><span>Contas financeiras</span></a>
-        <span class="nav-label">Gestão</span><a href="#indicadores" data-view="indicadores"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M207.06,72.67A111.24,111.24,0,0,0,128,40h-.4C66.07,40.21,16,91,16,153.13V176a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V152A111.25,111.25,0,0,0,207.06,72.67ZM224,176H119.71l54.76-75.3a8,8,0,0,0-12.94-9.42L99.92,176H32V153.13c0-3.08.15-6.12.43-9.13H56a8,8,0,0,0,0-16H35.27c10.32-38.86,44-68.24,84.73-71.66V80a8,8,0,0,0,16,0V56.33A96.14,96.14,0,0,1,221,128H200a8,8,0,0,0,0,16h23.67c.21,2.65.33,5.31.33,8Z"/></svg><span>Indicadores</span></a>
-<a href="#categorias" data-view="categorias"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M20 13 13 20a2 2 0 0 1-3 0L2 12V3h9l9 8a2 2 0 0 1 0 2Z"/><circle cx="7" cy="7" r="1"/></svg><span>Categorias</span></a>
-        <a href="#pessoas" data-view="pessoas"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg><span>Clientes e fornecedores</span></a>
-        <a href="#relatorios" data-view="relatorios"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 16v2m4-6v6m4-8v8"/></svg><span>Relatórios</span></a>
-        <span class="nav-label">Ferramentas</span><a href="#conciliacao" data-view="conciliacao"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M24,104H48v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16H208V104h24a8,8,0,0,0,4.19-14.81l-104-64a8,8,0,0,0-8.38,0l-104,64A8,8,0,0,0,24,104Zm40,0H96v64H64Zm80,0v64H112V104Zm48,64H160V104h32ZM128,41.39,203.74,88H52.26ZM248,208a8,8,0,0,1-8,8H16a8,8,0,0,1,0-16H240A8,8,0,0,1,248,208Z"/></svg><span>Conciliação</span></a>
-        <a href="#dados" data-view="dados"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1-11.32,11.32L136,139.31V184a8,8,0,0,1-16,0V139.31l-10.34,10.35a8,8,0,0,1-11.32-11.32l24-24a8,8,0,0,1,11.32,0Z"/></svg><span>Importar dados</span></a>
-      </nav>
+    <div class="menu-scroll" data-branched-menu></div>
     <div class="side-foot">
       <span class="side-caption">Seu financeiro, em perspectiva.</span>
       <a class="settings-link" href="#configuracoes" data-view="configuracoes"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m9 3-1 3-3 1-2 5 2 5 3 1 1 3h6l1-3 3-1 2-5-2-5-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></svg><span>Configurações</span></a>
@@ -45,30 +33,16 @@
   </aside>
 
   <header class="topbar">
-    <span class="mark"><img src="assets/img/logo-branco.png" alt="Mundo Novo"></span>
+    <span class="mark"><img src="assets/img/logo-branco.png" alt="Mundo Novo" width="360" height="155"></span>
     <span class="where" id="where">Visão geral</span>
     <button type="button" class="menu" id="menu-open" aria-label="Abrir menu" aria-expanded="false" aria-controls="sheet"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/></svg></button>
   </header>
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Menu" inert>
     <div class="sheet-top">
-      <span class="lockup-tile" style="width:160px"><img src="assets/img/logo-branco.png" alt="Mundo Novo"></span>
+      <span class="lockup-tile" style="width:160px"><img src="assets/img/logo-branco.png" alt="Mundo Novo" width="360" height="155"></span>
       <button type="button" class="menu btn btn-ghost" id="menu-close" aria-label="Fechar menu"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg></button>
     </div>
-    <nav class="nav" aria-label="Telas do caixa"><span class="nav-label">Principal</span>
-        <a href="#geral" data-view="geral"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><span>Visão geral</span></a>
-        <a href="#fluxo" data-view="fluxo"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0v94.37L90.73,98a8,8,0,0,1,10.07-.38l58.81,44.11L218.73,90a8,8,0,1,1,10.54,12l-64,56a8,8,0,0,1-10.07.38L96.39,114.29,40,163.63V200H224A8,8,0,0,1,232,208Z"/></svg><span>Fluxo de caixa</span></a>
-        <span class="nav-label">Financeiro</span><a href="#receber" data-view="receber"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M230.33,141.06a24.43,24.43,0,0,0-21.24-4.23l-41.84,9.62A28,28,0,0,0,140,112H89.94a31.82,31.82,0,0,0-22.63,9.37L44.69,144H16A16,16,0,0,0,0,160v40a16,16,0,0,0,16,16H120a7.93,7.93,0,0,0,1.94-.24l64-16a6.94,6.94,0,0,0,1.19-.4L226,182.82l.44-.2a24.6,24.6,0,0,0,3.93-41.56ZM16,160H40v40H16Zm203.43,8.21-38,16.18L119,200H56V155.31l22.63-22.62A15.86,15.86,0,0,1,89.94,128H140a12,12,0,0,1,0,24H112a8,8,0,0,0,0,16h32a8.32,8.32,0,0,0,1.79-.2l67-15.41.31-.08a8.6,8.6,0,0,1,6.3,15.9ZM164,96a36,36,0,0,0,5.9-.48,36,36,0,1,0,28.22-47A36,36,0,1,0,164,96Zm60-12a20,20,0,1,1-20-20A20,20,0,0,1,224,84ZM164,40a20,20,0,0,1,19.25,14.61,36,36,0,0,0-15,24.93A20.42,20.42,0,0,1,164,80a20,20,0,0,1,0-40Z"/></svg><span>A receber</span></a>
-        <a href="#pagar" data-view="pagar"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"/></svg><span>A pagar</span></a>
-        <a href="#fechamento" data-view="fechamento"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M239.76,158.06,217.28,68.12A16,16,0,0,0,201.75,56H136V40a16,16,0,0,0-16-16H80A16,16,0,0,0,64,40V56H54.25A16,16,0,0,0,38.72,68.12L16.24,158.06A7.93,7.93,0,0,0,16,160v32a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V160A7.93,7.93,0,0,0,239.76,158.06ZM80,40h40V56H80ZM54.25,72h147.5l20,80H34.25ZM32,192V168H224v24ZM64,96a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,96Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,96ZM64,128a8,8,0,0,1,8-8H88a8,8,0,0,1,0,16H72A8,8,0,0,1,64,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H120A8,8,0,0,1,112,128Zm48,0a8,8,0,0,1,8-8h16a8,8,0,0,1,0,16H168A8,8,0,0,1,160,128Z"/></svg><span>Fechamento</span></a>
-        <a href="#lancamentos" data-view="lancamentos"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M80,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H88A8,8,0,0,1,80,64Zm136,56H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Zm0,64H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM44,52A12,12,0,1,0,56,64,12,12,0,0,0,44,52Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,116Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,180Z"/></svg><span>Lançamentos</span></a>
-<a href="#contas" data-view="contas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 7v2h20V7L12 2ZM4 11h3v7H4v-7Zm7 0h2v7h-2v-7Zm6 0h3v7h-3v-7ZM2 20h20v2H2v-2Z"/></svg><span>Contas financeiras</span></a>
-        <span class="nav-label">Gestão</span><a href="#indicadores" data-view="indicadores"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M207.06,72.67A111.24,111.24,0,0,0,128,40h-.4C66.07,40.21,16,91,16,153.13V176a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V152A111.25,111.25,0,0,0,207.06,72.67ZM224,176H119.71l54.76-75.3a8,8,0,0,0-12.94-9.42L99.92,176H32V153.13c0-3.08.15-6.12.43-9.13H56a8,8,0,0,0,0-16H35.27c10.32-38.86,44-68.24,84.73-71.66V80a8,8,0,0,0,16,0V56.33A96.14,96.14,0,0,1,221,128H200a8,8,0,0,0,0,16h23.67c.21,2.65.33,5.31.33,8Z"/></svg><span>Indicadores</span></a>
-<a href="#categorias" data-view="categorias"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M20 13 13 20a2 2 0 0 1-3 0L2 12V3h9l9 8a2 2 0 0 1 0 2Z"/><circle cx="7" cy="7" r="1"/></svg><span>Categorias</span></a>
-        <a href="#pessoas" data-view="pessoas"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg><span>Clientes e fornecedores</span></a>
-        <a href="#relatorios" data-view="relatorios"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 16v2m4-6v6m4-8v8"/></svg><span>Relatórios</span></a>
-        <span class="nav-label">Ferramentas</span><a href="#conciliacao" data-view="conciliacao"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M24,104H48v64H32a8,8,0,0,0,0,16H224a8,8,0,0,0,0-16H208V104h24a8,8,0,0,0,4.19-14.81l-104-64a8,8,0,0,0-8.38,0l-104,64A8,8,0,0,0,24,104Zm40,0H96v64H64Zm80,0v64H112V104Zm48,64H160V104h32ZM128,41.39,203.74,88H52.26ZM248,208a8,8,0,0,1-8,8H16a8,8,0,0,1,0-16H240A8,8,0,0,1,248,208Z"/></svg><span>Conciliação</span></a>
-        <a href="#dados" data-view="dados"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-42.34-77.66a8,8,0,0,1-11.32,11.32L136,139.31V184a8,8,0,0,1-16,0V139.31l-10.34,10.35a8,8,0,0,1-11.32-11.32l24-24a8,8,0,0,1,11.32,0Z"/></svg><span>Importar dados</span></a>
-      </nav>
+    <div class="menu-scroll" data-branched-menu></div>
     <a class="settings-link" href="#configuracoes" data-view="configuracoes"><svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="m9 3-1 3-3 1-2 5 2 5 3 1 1 3h6l1-3 3-1 2-5-2-5-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></svg><span>Configurações</span></a>
     <div class="theme" role="group" aria-label="Tema">
       <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
@@ -84,7 +58,7 @@
     <section class="view" id="geral" aria-labelledby="h-geral">
       <div class="title-row">
         <div>
-          <span class="eyebrow">SEU FINANCEIRO EM UM SÓ LUGAR</span><h1 id="h-geral">Visão geral</h1>
+          <h1 id="h-geral">Visão geral</h1>
           <p class="finding" id="g-finding"></p>
         </div>
         <div class="actions">
@@ -94,7 +68,7 @@
         </div>
       </div>
       <article class="card" id="g-resumo" hidden>
-        <div class="card-head"><h2>Resumo do dia para enviar</h2><span class="meta">Texto pronto para mandar ao dono no fim do dia</span></div>
+        <div class="card-head"><h2>Resumo do dia para enviar</h2><span class="meta">Copie o resumo ou compartilhe pelo WhatsApp.</span></div>
         <textarea class="resumo" id="g-resumo-txt" rows="9" readonly aria-label="Texto do resumo do dia"></textarea>
         <div class="actions">
           <button type="button" class="btn btn-primary" id="g-resumo-copiar"><svg viewBox="0 0 256 256" aria-hidden="true"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/></svg>Copiar texto</button>
@@ -140,24 +114,20 @@
       <div class="title-row">
         <div>
           <h1 id="h-fluxo">Fluxo de caixa</h1>
-          <p class="finding" id="f-finding"></p>
+          <p class="finding" id="f-finding" aria-live="polite" aria-atomic="true"></p>
         </div>
-        <div class="seg" role="group" aria-label="Agrupar por">
-          <button type="button" data-grao="dia" aria-pressed="false">Dia</button>
-          <button type="button" data-grao="semana" aria-pressed="true">Semana</button>
-          <button type="button" data-grao="mes" aria-pressed="false">Mês</button>
-        </div>
+        <div id="f-period"></div>
       </div>
       <article class="card">
-        <div class="card-head"><h2>Entradas e saídas, realizado e previsto</h2><div class="chart-legend" id="f-legend"></div></div>
+        <div class="card-head"><h2 id="f-chart-title">Entradas e saídas, realizado e previsto</h2><div class="chart-legend" id="f-legend"></div></div>
         <div class="chart" id="f-chart" style="min-height:280px"></div>
-        <p class="card-note">O previsto vem dos títulos em aberto a receber e a pagar nos próximos 60 dias. Vendas que ainda vão acontecer não entram.</p>
+        <p class="card-note" id="f-chart-note">O previsto vem dos títulos em aberto a receber e a pagar nos próximos 60 dias. Vendas que ainda vão acontecer não entram.</p>
       </article>
       <article class="card">
-        <div class="card-head"><h2>Por categoria</h2><span class="meta">Mês atual até hoje e mês anterior inteiro</span></div>
+        <div class="card-head"><h2>Por categoria</h2><span class="meta" id="f-cat-period"></span></div>
         <div class="tbl-wrap short">
           <table aria-label="Entradas e saídas por categoria">
-            <thead><tr><th>Categoria</th><th class="num">Mês atual</th><th class="num">Mês anterior</th><th class="num hide-sm">Variação</th></tr></thead>
+            <thead><tr><th>Categoria</th><th class="num" id="f-cat-current">Semana atual</th><th class="num" id="f-cat-previous">Semana anterior</th><th class="num hide-sm">Variação</th></tr></thead>
             <tbody id="f-cat"></tbody>
           </table>
         </div>
@@ -234,8 +204,11 @@
       <div class="cols cols-3-2">
         <article class="card">
           <div class="card-head"><h2>Calendário de pagamentos</h2><span class="meta">Quanto mais forte o vermelho, maior o valor que sai no dia</span></div>
-          <div class="cal-head" aria-hidden="true"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
-          <div class="cal" id="p-cal"></div>
+          <div class="calendar-scroll" tabindex="0" role="region" aria-label="Calendário de pagamentos; role para ver todos os dias">
+            <div class="cal-head" aria-hidden="true"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
+            <div class="cal" id="p-cal"></div>
+          </div>
+          <p class="card-note scroll-hint">Role para os lados para ver todos os dias.</p>
         </article>
         <article class="card">
           <div class="card-head"><h2>Próximos 30 dias por categoria</h2></div>
@@ -251,7 +224,7 @@
           </table>
         </div>
         <div class="more card-foot"><button type="button" class="btn btn-ghost" id="p-more" hidden>Mostrar todos</button></div>
-        <p class="card-note">A baixa de pagamento entra junto com o lançamento manual, na próxima fase.</p>
+        <p class="card-note">Baixas de pagamento e lançamentos manuais dependem da integração com um sistema de gravação.</p>
       </article>
       <article class="card">
         <div class="card-head"><h2>Abatimentos de produtores</h2><span class="meta">Títulos dos últimos 90 dias com desconto</span></div>
@@ -276,7 +249,7 @@
       <article class="card">
         <div class="card-head"><h2>Diferença de gaveta nos últimos 30 fechamentos</h2><div class="chart-legend" id="c-legend"></div></div>
         <div class="chart" id="c-chart"></div>
-        <p class="card-note">Contado menos esperado. Zero quer dizer que a gaveta fechou certa.</p>
+        <p class="card-note">Diferença entre o valor contado e o esperado. Zero indica que os valores coincidem.</p>
       </article>
       <div class="cols cols-1-2">
         <article class="card">
@@ -423,6 +396,7 @@
 <script src="assets/js/calculos.js"></script>
 <script src="assets/js/ui.js"></script>
 <script src="assets/js/workspace.js"></script>
+<script src="assets/generated/branched-menu.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

@@ -217,40 +217,63 @@
 
   // ------- FLUXO -------
   let grao = 'semana';
+  const periodos = {
+    dia: { nome: 'Dia', anterior: 'dia anterior', por: 'dia' },
+    semana: { nome: 'Semana', anterior: 'semana anterior', por: 'semana' },
+    mes: { nome: 'Mês', anterior: 'mês anterior', por: 'mês' },
+    ano: { nome: 'Ano', anterior: 'ano anterior', por: 'ano' }
+  };
+  const flowPeriod = window.CaixaFlowPeriod.mount($('#f-period'), { value: grao, onChange: value => {
+    if (!periodos[value] || value === grao) return;
+    grao = value;
+    safe($('#f-chart'), renderFluxo);
+  } });
   function renderFluxo() {
-    workspace.renderFlowTable();
-    const res = get('resumo');
-    const mes = MESES[Number(HOJE.slice(5, 7)) - 1];
-    $('#f-finding').replaceChildren(`Em ${mes}, até hoje, entraram `, forte(1, brl(R(res, 'entradas_mes'))), ' e saíram ', forte(-1, brl(R(res, 'saidas_mes'))), '. O resultado de caixa do mês é ', h('span', { class: 'band', text: brlS(R(res, 'entradas_mes') - R(res, 'saidas_mes')) }), '.');
-    $$('#fluxo .seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.grao === grao)));
+    flowPeriod.setValue(grao);
+    const periodo = periodos[grao];
+    const res = get('fluxo_resumo').find(row => row.grao === grao);
+    const intervalo = res.inicio === res.ate ? dBR(res.ate) : `${dBR(res.inicio)} a ${dBR(res.ate)}`;
+    $('#fluxo').dataset.periodo = grao;
+    $('#f-finding').replaceChildren(`${periodo.nome} atual (${intervalo}): entraram `,
+      forte(res.entradas_centavos, brlS(res.entradas_centavos / 100)), ` (variação ${pctS(res.variacao_entradas)}) e saíram `,
+      forte(-res.saidas_centavos, brlS(-res.saidas_centavos / 100)), ` (variação ${pctS(res.variacao_saidas)}). Resultado: `,
+      h('span', { class: 'band', text: brlS(res.resultado_centavos / 100) }), ` (variação ${pctS(res.variacao_resultado)}). Comparação com ${periodo.anterior} completo; — indica ausência de base.`);
+    $('#f-cat-current').textContent = `${periodo.nome} atual`;
+    $('#f-cat-previous').textContent = `${periodo.nome} anterior`;
+    $('#f-cat-period').textContent = `${intervalo} vs. ${dBR(res.anterior_inicio)} a ${dBR(res.anterior_fim)}`;
+    $('#f-chart-title').textContent = `Entradas e saídas por ${periodo.por}, realizado e previsto`;
+    $('#f-chart-note').textContent = `Agrupamento por ${periodo.por}; posição em ${dBR(HOJE)}. O previsto vem dos títulos em aberto a receber e a pagar nos próximos 60 dias. Vendas que ainda vão acontecer não entram. O resumo e as categorias comparam o realizado do período atual até a posição com o período anterior completo.`;
+    const fl = get('fluxo').filter(row => row.grao === grao && (grao !== 'dia' || (row.periodo >= addDias(HOJE, -45) && row.periodo <= addDias(HOJE, 30))));
+    workspace.renderFlowTable(fl, grao);
     const el = $('#f-chart'), lg = $('#f-legend');
     tingir(el);
     lg.replaceChildren();
     safe(el, () => {
-      const fl = get('fluxo').filter((r) => r.grao === grao);
-      let per = [...new Set(fl.map((r) => r.periodo))].sort();
-      if (grao === 'dia') per = per.filter((p) => p >= addDias(HOJE, -45) && p <= addDias(HOJE, 30));
-      const sum = (p, k, nat) => fl.filter((r) => r.periodo === p && (!nat || r.natureza === nat)).reduce((s, r) => s + r[k], 0);
+      const per = [...new Set(fl.map((r) => r.periodo))].sort();
+      if (!per.length) { el.replaceChildren(h('p', { class: 'empty', text: 'Nenhuma movimentação ou previsão neste período.' })); return; }
+      const sum = (p, k, nat) => fl.filter((r) => r.periodo === p && (!nat || r.natureza === nat)).reduce((s, r) => s + r[k + '_centavos'], 0) / 100;
       const mark = per.map((p, i) => (sum(p, 'entradas', 'realizado') + sum(p, 'saidas', 'realizado') === 0 ? i : -1)).filter((i) => i >= 0);
-      const label = (p) => (grao === 'mes' ? MESES[Number(p.slice(5, 7)) - 1].slice(0, 3) + '/' + p.slice(2, 4) : dCurta(p));
-      const partial = per.findIndex((p) => (grao === 'dia' ? p === HOJE : grao === 'semana' ? p <= HOJE && addDias(p, 6) >= HOJE : p.slice(0, 7) === HOJE.slice(0, 7)));
+      const label = p => grao === 'ano' ? p.slice(0, 4) : grao === 'mes' ? MESES[Number(p.slice(5, 7)) - 1].slice(0, 3) + '/' + p.slice(2, 4) : grao === 'semana' ? dCurta(p) + '/' + p.slice(2, 4) : dCurta(p);
+      const partial = per.findIndex(p => p === res.inicio);
       const out = Charts.diverging(el, {
         labels: per.map(label), up: per.map((p) => sum(p, 'entradas')), down: per.map((p) => sum(p, 'saidas')),
-        above: 'Entradas', below: 'Saídas', mark, markLabel: 'Previsto, mais claro', markSide: 'both', markTint: true, partial: partial >= 0 ? partial : null,
+        above: 'Entradas', below: 'Saídas', mark, markLabel: `Previsto por ${periodo.por}, mais claro`, markSide: 'both', markTint: true, partial: partial >= 0 ? partial : null,
         format: brl, tickFormat: fmtC, height: 280,
       });
       if (out && out.legend) lg.append(out.legend);
     });
     const tb = $('#f-cat');
     safe(tb, () => {
-      tb.replaceChildren(...get('categorias').map((c) => {
-        const v = c.mes_anterior ? c.mes_atual / c.mes_anterior - 1 : null;
-        const sinal = c.tipo === 'entrada' ? 1 : -1;
+      const categorias = get('fluxo_comparacao').filter(row => row.grao === grao);
+      if (!categorias.length) { tb.replaceChildren(h('tr', {}, h('td', { colspan: 4, class: 'empty', text: 'Nenhuma movimentação nos períodos comparados.' }))); return; }
+      tb.replaceChildren(...categorias.map((c) => {
+        const v = c.anterior_centavos ? c.atual_centavos / c.anterior_centavos - 1 : null;
+        const sentido = c.tipo === 'entrada' ? 1 : -1;
         return h('tr', {},
           h('td', { class: 'id' }, h('b', { text: c.categoria }), h('span', { class: 'sub', text: c.tipo === 'entrada' ? 'Entrada' : 'Saída' })),
-          h('td', { class: 'num ' + (sinal > 0 ? 'pos' : 'neg'), text: brlS(sinal * c.mes_atual) }),
-          h('td', { class: 'num ' + (sinal > 0 ? 'pos' : 'neg'), text: brlS(sinal * c.mes_anterior) }),
-          h('td', { class: 'num hide-sm ' + (c.mes_anterior ? (Math.abs(v) < 0.0005 ? '' : v > 0 ? 'pos' : 'neg') : 'dash'), text: c.mes_anterior ? pctS(v) : '—' }));
+          h('td', { class: 'num ' + sinal(sentido * c.atual_centavos / 100), text: brlS(sentido * c.atual_centavos / 100) }),
+          h('td', { class: 'num ' + sinal(sentido * c.anterior_centavos / 100), text: brlS(sentido * c.anterior_centavos / 100) }),
+          h('td', { class: 'num hide-sm ' + (v == null ? 'dash' : sinal(v)), text: pctS(v) }));
       }));
     });
   }
@@ -962,10 +985,9 @@
     route();
   }
   function atualizarContagem() {
-    $$('.nav-count').forEach((e) => e.remove());
     try {
       const n = R(get('resumo'), 'vencidos_qtd');
-      if (n > 0) $$('.nav a[data-view="receber"]').forEach((a) => a.append(h('span', { class: 'nav-count', 'aria-label': `${n} títulos vencidos`, text: int(n) })));
+      window.CaixaMenu.setReceivableCount(n);
     } catch (e) { console.error(e); }
   }
 
@@ -992,6 +1014,7 @@
     const view = VIEWS[v] ? v : 'geral';
     if (view === 'receber' && arg) { rState.only = arg === 'vencidos'; rState.limite = arg === 'limite'; rState.sort = arg === 'limite' ? 'uso_limite' : 'vencido'; rState.dir = -1; if (done.has('receber')) { $('#r-only').checked = rState.only; drawClientes(); } }
     $$('main > .view').forEach((s) => { s.hidden = s.id !== view; });
+    window.CaixaMenu.setActive(view);
     $$('a[data-view]').forEach((a) => { if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     $('#where').textContent = NOMES[view];
     document.title = `${NOMES[view]} · Caixa Novo · Mundo Novo`;
@@ -1006,7 +1029,6 @@
   // ------- CONTROLES -------
   $$('.ktab').forEach((t) => t.addEventListener('click', () => { chartTab = t.id.slice(3); drawGeralChart(); }));
   $('.ktabs').addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { chartTab = chartTab === 'saldo' ? 'fluxo' : 'saldo'; drawGeralChart(); $('#kt-' + chartTab).focus(); } });
-  $$('#fluxo .seg button').forEach((b) => b.addEventListener('click', () => { grao = b.dataset.grao; renderFluxo(); }));
   let tq;
   $('#r-q').addEventListener('input', (e) => { clearTimeout(tq); tq = setTimeout(() => { rState.q = e.target.value; drawClientes(); }, 150); });
   $('#r-nota').addEventListener('change', (e) => { rState.nota = e.target.value; renderNotasSel(); drawClientes(); });
@@ -1035,12 +1057,19 @@
   function fecharMenu() { sheet.classList.remove('open'); sheet.setAttribute('inert', ''); $('#main').removeAttribute('inert'); $('.topbar').removeAttribute('inert'); document.body.style.overflow = ''; $('#menu-open').setAttribute('aria-expanded', 'false'); }
   $('#menu-open').addEventListener('click', () => { sheet.removeAttribute('inert'); sheet.classList.add('open'); $('#main').setAttribute('inert', ''); $('.topbar').setAttribute('inert', ''); document.body.style.overflow = 'hidden'; $('#menu-open').setAttribute('aria-expanded', 'true'); $('#menu-close').focus(); });
   $('#menu-close').addEventListener('click', () => { fecharMenu(); $('#menu-open').focus(); });
+  sheet.addEventListener('click', event => {
+    const link = event.target.closest('a[data-view]');
+    if (link && link.hash === location.hash && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+      fecharMenu(); $('#menu-open').focus();
+    }
+  });
   matchMedia('(min-width: 901px)').addEventListener('change', event => { if (event.matches) fecharMenu(); });
   document.addEventListener('keydown', (e) => {
     if (!sheet.classList.contains('open')) return;
     if (e.key === 'Escape') { fecharMenu(); $('#menu-open').focus(); }
     if (e.key === 'Tab') {
-      const nodes = $$('a[href],button', sheet), first = nodes[0], last = nodes[nodes.length - 1];
+      const nodes = $$('a[href],button', sheet).filter(node => node.tabIndex >= 0 && !node.closest('[inert]') && node.getClientRects().length);
+      const first = nodes[0], last = nodes[nodes.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }

@@ -4,15 +4,26 @@
   "private": true,
   "description": "Caixa Novo: painel interno de caixa da Mundo Novo, distribuidora de frutas em Rondonópolis.",
   "scripts": {
+    "prepare": "npm run build:menu",
+    "predev": "npm run build:menu",
     "dev": "npx --yes serve@14 -l 5173 .",
+    "build:menu": "node scripts/build-menu.cjs",
     "check": "node scripts/check.cjs",
     "test": "node --test tests/calculos.test.cjs",
     "test:browser": "node tests/browser.cjs",
-    "build": "python scripts/montar_arquivo_unico.py",
+    "build": "npm run build:menu && python scripts/montar_arquivo_unico.py",
     "dados": "python scripts/gerar_dados.py",
-    "arquivo-unico": "python scripts/montar_arquivo_unico.py"
+    "arquivo-unico": "npm run build"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "playwright": "1.62.1"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "^4.4.0",
+    "@hugeicons/react": "^1.1.10",
+    "motion": "^14.9.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }

@@ -15,6 +15,7 @@ const server = createServer((req, res) => {
 const routes = ['geral', 'fluxo', 'receber', 'pagar', 'fechamento', 'lancamentos', 'indicadores', 'contas', 'pessoas', 'categorias', 'relatorios', 'conciliacao', 'dados', 'configuracoes'];
 const checks = [];
 const ok = message => { checks.push(message); console.log('OK ' + message); };
+const checkFlow = require('./flow-browser.cjs');
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const url = 'http://127.0.0.1:' + server.address().port;
@@ -27,6 +28,56 @@ const ok = message => { checks.push(message); console.log('OK ' + message); };
     const go = async id => { await page.evaluate(id => { location.hash = id; }, id); await page.locator('#' + id).waitFor({ state: 'visible' }); };
     await page.goto(url); await page.locator('#app-loading').waitFor({ state: 'hidden' });
     assert.match(await page.locator('#data-origin').innerText(), /Dados de exemplo/);
+    const desktopMenu = page.locator('.side .branched-menu');
+    const headings = desktopMenu.locator('.branched-menu__head');
+    assert.deepEqual(await headings.allTextContents(), ['Principal', 'Financeiro', 'Gestão', 'Ferramentas', 'Configurações']);
+    assert.equal(await desktopMenu.locator('a[data-view]').count(), 14);
+    assert.equal(await page.locator('.side').evaluate(el => el.getBoundingClientRect().width), 224);
+    for (const id of routes) {
+      const link = desktopMenu.locator(`a[data-view="${id}"]`);
+      const section = link.locator('xpath=ancestor::div[contains(@class,"branched-menu__section")]');
+      const head = section.locator('.branched-menu__head');
+      if (await head.getAttribute('aria-expanded') !== 'true') await head.click();
+      await link.click();
+      await page.locator('#' + id).waitFor({ state: 'visible' });
+      assert.equal(await link.getAttribute('aria-current'), 'page', id);
+      assert.equal(await desktopMenu.locator('a[aria-current="page"]').count(), 1, id);
+      assert.equal(await section.locator('.branched-menu__reach').evaluateAll(paths => paths.filter(path => Number(path.style.strokeDashoffset) === 0).length), 1);
+    }
+    const badgeBefore = await desktopMenu.locator('[data-view="receber"] .nav-count').innerText();
+    assert.ok(Number(badgeBefore.replace(/\D/g, '')) > 0);
+    for (let i = 0; i < 5; i++) {
+      const head = headings.nth(i);
+      await head.click();
+      assert.equal(await head.getAttribute('aria-expanded'), 'false');
+      const body = desktopMenu.locator('.branched-menu__body').nth(i);
+      assert.equal(await body.getAttribute('inert'), '');
+      assert.ok((await body.locator('a').evaluateAll(links => links.every(link => link.tabIndex === -1))));
+      await head.focus(); await page.keyboard.press('Enter');
+      assert.equal(await head.getAttribute('aria-expanded'), 'true');
+    }
+    await headings.nth(2).click();
+    await desktopMenu.locator('[data-view="geral"]').click();
+    assert.equal(await headings.nth(2).getAttribute('aria-expanded'), 'false');
+    await page.reload(); await page.locator('#app-loading').waitFor({ state: 'hidden' });
+    assert.equal(await headings.nth(2).getAttribute('aria-expanded'), 'false');
+    await go('pessoas');
+    assert.equal(await headings.nth(2).getAttribute('aria-expanded'), 'true');
+    await desktopMenu.locator('[data-view="geral"]').click();
+    await desktopMenu.locator('[data-view="fluxo"]').click();
+    await page.goBack(); await page.locator('#geral').waitFor({ state: 'visible' });
+    assert.equal(await desktopMenu.locator('[data-view="geral"]').getAttribute('aria-current'), 'page');
+    await page.goForward(); await page.locator('#fluxo').waitFor({ state: 'visible' });
+    assert.equal(await desktopMenu.locator('[data-view="fluxo"]').getAttribute('aria-current'), 'page');
+    await page.evaluate(() => { location.hash = 'receber/vencidos'; });
+    await page.locator('#receber').waitFor({ state: 'visible' });
+    assert.equal(await desktopMenu.locator('[data-view="receber"]').getAttribute('aria-current'), 'page');
+    await page.setViewportSize({ width: 1440, height: 600 });
+    assert.ok(await page.locator('.side .menu-scroll').evaluate(el => el.scrollHeight > el.clientHeight));
+    assert.ok(await page.locator('.side .side-foot').evaluate(el => el.getBoundingClientRect().bottom <= innerHeight));
+    assert.ok(await page.locator('.side .product-brand').evaluate(el => el.getBoundingClientRect().top >= 0));
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    ok('BranchedMenu: 14 links, 5 expansões por mouse/teclado, ativo, badge, histórico, subrota, persistência e rolagem interna');
     for (const width of [1440, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
       for (const route of routes) {
@@ -38,6 +89,8 @@ const ok = message => { checks.push(message); console.log('OK ' + message); };
     }
     ok('14 rotas em desktop, tablet e celular, sem rolagem horizontal da página');
     mkdirSync(resolve(root, 'test-results'), { recursive: true });
+    await checkFlow(browser, url, root);
+    ok('RubberSegment: quatro períodos com dados conferidos, categorias, filtros, CSV, teclado, arraste, toque e responsividade');
     await page.setViewportSize({ width: 390, height: 844 });
     await go('geral'); await page.screenshot({ path: resolve(root, 'test-results/dashboard-mobile.png'), fullPage: true });
     await page.locator('#menu-open').click();
@@ -46,9 +99,36 @@ const ok = message => { checks.push(message); console.log('OK ' + message); };
     assert.equal(await page.locator('#menu-open').getAttribute('aria-expanded'), 'false');
     assert.equal(await page.locator('#main').getAttribute('inert'), null);
     await page.locator('#menu-open').click();
+    const mobileMenu = page.locator('#sheet .branched-menu');
+    const mobileManagement = mobileMenu.locator('.branched-menu__head').nth(2);
+    await mobileManagement.click();
+    assert.equal(await headings.nth(2).getAttribute('aria-expanded'), 'false');
+    await mobileManagement.click();
     await page.locator('#sheet a[data-view="pessoas"]').click();
     await page.locator('#pessoas').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#main').getAttribute('inert'), null);
+    for (const width of [768, 390, 320]) {
+      await page.setViewportSize({ width, height: 700 });
+      for (const id of routes) {
+        await page.locator('#menu-open').click();
+        const link = mobileMenu.locator(`a[data-view="${id}"]`);
+        const head = link.locator('xpath=ancestor::div[contains(@class,"branched-menu__section")]').locator('.branched-menu__head');
+        if (await head.getAttribute('aria-expanded') !== 'true') await head.click();
+        await link.click();
+        await page.locator('#' + id).waitFor({ state: 'visible' });
+        assert.equal(await link.getAttribute('aria-current'), 'page');
+        assert.equal(await page.locator('#menu-open').getAttribute('aria-expanded'), 'false');
+        assert.equal(await page.locator('#main').getAttribute('inert'), null);
+      }
+    }
+    await page.locator('#menu-open').click();
+    await page.locator('#sheet [data-theme-set="dark"]').focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'menu-close');
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.themeSet), 'dark');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'menu-open');
     ok('menu mobile: abertura, Escape, navegação e liberação do foco');
 
     await page.setViewportSize({ width: 1440, height: 1080 });
@@ -163,6 +243,14 @@ const ok = message => { checks.push(message); console.log('OK ' + message); };
       await standalone.locator('#g-strip .kpi-value').first().waitFor();
       await standalone.evaluate(() => { location.hash = 'contas'; });
       await standalone.locator('#contas-content .account-card').first().waitFor();
+      await standalone.evaluate(() => { location.hash = 'fluxo'; });
+      await standalone.getByRole('radio', { name: 'Ano', exact: true }).click();
+      assert.equal(await standalone.locator('#f-cat-current').innerText(), 'Ano atual');
+      await standalone.evaluate(() => { location.hash = 'contas'; });
+      await standalone.locator('#contas-content .account-card').first().waitFor();
+      assert.equal(await standalone.locator('.side .branched-menu a[data-view="contas"]').getAttribute('aria-current'), 'page');
+      await standalone.locator('.side .branched-menu__head').nth(1).click();
+      assert.equal(await standalone.locator('.side .branched-menu__head').nth(1).getAttribute('aria-expanded'), 'false');
       assert.deepEqual(standaloneErrors, []); await standalone.close();
       ok('build HTML único contém componentes, scripts e fontes embutidas');
     }

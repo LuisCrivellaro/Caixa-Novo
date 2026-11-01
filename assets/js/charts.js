@@ -32,10 +32,12 @@
 // the card's header, or pass legend: element (or a selector) to have it filled.
 // Numbers follow the page's language (<html lang>). Every chart gets role="img" and an aria-label that states what it shows.
 (() => {
-  const NS = 'http://www.w3.org/2000/svg', MINUS = '\u2212', ROW = 14, LANE = (rows) => 8 + rows * ROW + (rows ? 4 : 0);
+  const NS = 'http://www.w3.org/2000/svg', MINUS = '\u2212', ROW = 22, LANE = (rows) => 8 + rows * ROW + (rows ? 4 : 0);
   const css = (el, name, fb) => getComputedStyle(el).getPropertyValue(name).trim() || fb;
   const cssNum = (el, name, fb) => { const v = parseFloat(css(el, name, '')); return Number.isFinite(v) ? v : fb; };
   const svg = (tag, attrs = {}, parent) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, v); if (parent) parent.appendChild(n); return n; };
+  // SVG measurement and drawing share the same CSS type roles (including browser text scaling).
+  const TYPE = { note: 'var(--type-chart-note, 12px)', axis: 'var(--type-chart-label, 13px)', body: 'var(--type-body, 14px)', value: 'var(--type-label, 13px)' };
   const text = (parent, str, attrs) => { const t = svg('text', attrs, parent); t.textContent = str; return t; };
   const titled = (parent, str) => { svg('title', {}, parent).textContent = str; return parent; };
   // numbers follow the page's language (<html lang>), so separators match the rest of the screen
@@ -67,12 +69,12 @@
   // x labels keep one step all the way: every k-th label, with k chosen so the labels fit the width, and a step that
   // lands on the last label when one gives enough labels. Never a forced end label that breaks the step. Clock labels
   // ('08:30') step in whole hours (or halves and quarters) from a round time, so a half-hourly axis reads 06:00, 09:00.
-  function xPicks(labels, span, at) {
+  function xPicks(labels, span, at, labelWidth) {
     const n = labels.length;
     if (at) return at.filter((i) => i >= 0 && i < n);
     if (n <= 1) return n ? [0] : [];
     const longest = Math.max(...labels.map((l) => String(l).length));
-    const cap = Math.max(2, Math.min(8, Math.floor(span / (longest * 7 + 18))));
+    const cap = Math.max(2, Math.min(8, Math.floor(span / ((labelWidth ?? longest * 7) + 18))));
     if (n <= cap) return [...Array(n).keys()];
     const mins = labels.every((l) => /^\d{1,2}:\d{2}$/.test(String(l))) ? labels.map(minutes) : null;
     const d = mins ? mins[1] - mins[0] : 0;
@@ -102,34 +104,110 @@
   };
   const mix = (el, a, b, t) => { const p = rgb(el, a), q = rgb(el, b); return p && q ? `rgb(${p.map((v, i) => Math.round(v * t + q[i] * (1 - t))).join(',')})` : a; };
   // text width, measured in the chart's own face (falls back to an estimate when the chart is hidden)
-  const measure = (s, str, size = 11, weight = 400) => { const t = text(s, str, { x: -999, y: -999, 'font-size': size, 'font-weight': weight, visibility: 'hidden' }); let wd = 0; try { wd = t.getComputedTextLength(); } catch {} t.remove(); return wd > 0 ? wd : String(str).length * size * 0.56; };
+  const measure = (s, str, size = TYPE.note, weight = 400) => { const t = text(s, str, { x: -999, y: -999, 'font-size': size, 'font-weight': weight, visibility: 'hidden' }); let wd = 0; try { wd = t.getComputedTextLength(); } catch {} const px = parseFloat(getComputedStyle(t).fontSize) || 13; t.remove(); return wd > 0 ? wd : String(str).length * px * 0.56; };
   const fit = (s, str, max, size, weight) => { str = String(str); if (measure(s, str, size, weight) <= max) return str; while (str.length > 1 && measure(s, str + '\u2026', size, weight) > max) str = str.slice(0, -1); return str.trimEnd() + '\u2026'; };
   function frame(el, h) {
+    el._restoreChartFocus = el._restoreChartFocus || document.activeElement === el.querySelector(':scope > svg');
     el.innerHTML = '';
     const w = Math.max(240, el.clientWidth || 600);
     const s = svg('svg', { viewBox: `0 0 ${w} ${h}`, width: '100%', height: h, role: 'img', style: 'display:block;overflow:visible;font-variant-numeric:tabular-nums' }, el);
     return { s, w, h };
   }
+  let tooltipSequence = 0;
   function tooltip(el) {
     let t = el.querySelector('.chart-tip');
-    if (!t) { t = document.createElement('div'); t.className = 'chart-tip'; t.style.cssText = 'position:absolute;pointer-events:none;padding:6px 8px;font:inherit;font-size:12px;line-height:1.35;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity 120ms ease;background:var(--surface,#fff);color:var(--ink,#111);border:1px solid var(--grid,#e5e7eb)'; if (getComputedStyle(el).position === 'static') el.style.position = 'relative'; el.appendChild(t); }
+    if (!t) {
+      t = document.createElement('div'); t.className = 'chart-tip'; t.id = `chart-tip-${++tooltipSequence}`;
+      t.setAttribute('role', 'tooltip'); t.setAttribute('aria-hidden', 'true');
+      t.setAttribute('aria-live', 'polite'); t.setAttribute('aria-atomic', 'true');
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+      el.appendChild(t);
+    }
     return t;
+  }
+  function emptyChart(el) {
+    el._draw = null; el._ro?.disconnect();
+    const message = document.createElement('p'); message.className = 'empty';
+    message.textContent = 'Nenhum dado disponível para este gráfico.';
+    el.replaceChildren(message);
+    return { legend: null };
+  }
+  // Uma superfície de consulta comum. Os valores recebidos não são recalculados.
+  function chartControls(el, s, { labels, w, h, padL, padT, padB, x, rows, onPoint }) {
+    const tip = tooltip(el), description = s.getAttribute('aria-label');
+    s.setAttribute('tabindex', '0'); s.setAttribute('aria-describedby', tip.id);
+    s.setAttribute('aria-roledescription', 'gráfico interativo');
+    s.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight Home End Escape');
+    s.setAttribute('aria-label', description + '. Use as setas para consultar os períodos e Escape para fechar a informação.');
+    svg('rect', { x: padL, y: padT, width: Math.max(0, w - padL), height: Math.max(0, h - padT - padB), fill: 'transparent', 'aria-hidden': 'true' }, s);
+    let index = Math.max(0, Math.min(labels.length - 1, el._activeChartIndex || 0)), frameId = 0;
+    const hide = () => {
+      cancelAnimationFrame(frameId); frameId = 0;
+      delete tip.dataset.visible; tip.setAttribute('aria-hidden', 'true'); onPoint?.(null);
+    };
+    const show = i => {
+      index = Math.max(0, Math.min(labels.length - 1, i));
+      el._activeChartIndex = index;
+      const heading = document.createElement('div'); heading.className = 'chart-tip__label'; heading.textContent = labels[index];
+      const values = rows(index).map(row => {
+        const item = document.createElement('div'); item.className = 'chart-tip__row';
+        const label = document.createElement('span'); label.textContent = row.label;
+        const value = document.createElement('strong'); value.textContent = row.text;
+        if (row.colour) value.style.color = row.colour;
+        item.append(label, value); return item;
+      });
+      tip.replaceChildren(heading, ...values); tip.dataset.visible = 'true'; tip.setAttribute('aria-hidden', 'false');
+      const rect = s.getBoundingClientRect();
+      const wanted = x(index) / w * rect.width + 12;
+      tip.style.left = `${Math.max(8, Math.min(wanted, el.clientWidth - tip.offsetWidth - 8))}px`;
+      tip.style.top = '8px';
+      onPoint?.(index);
+    };
+    const atPointer = event => {
+      const rect = s.getBoundingClientRect(), px = (event.clientX - rect.left) / rect.width * w;
+      const py = (event.clientY - rect.top) / rect.height * h;
+      if (px < padL || px > w || py < padT || py > h - padB) return;
+      let nearest = 0;
+      for (let i = 1; i < labels.length; i++) if (Math.abs(x(i) - px) < Math.abs(x(nearest) - px)) nearest = i;
+      show(nearest);
+    };
+    s.addEventListener('pointermove', event => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => { if (s.isConnected) atPointer(event); });
+    });
+    s.addEventListener('pointerdown', atPointer);
+    s.addEventListener('pointerleave', event => { if (event.pointerType === 'mouse') hide(); });
+    s.addEventListener('pointercancel', hide);
+    s.addEventListener('blur', hide);
+    s.addEventListener('focus', () => show(index));
+    s.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.preventDefault(); hide(); return; }
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? labels.length - 1 : event.key === 'ArrowLeft' ? index - 1 : event.key === 'ArrowRight' ? index + 1 : null;
+      if (next == null) return;
+      event.preventDefault(); show(next);
+    });
+    if (el._restoreChartFocus) { el._restoreChartFocus = false; s.focus({ preventScroll: true }); }
   }
   function axes(g, el, { w, h, padL, padB, yt, y, labels, x, band = false, at = null, tick, avoid = null }) {
     const grid = css(el, '--grid', '#e8e8e8'), ink = css(el, '--axis-ink', '#6b6b6b'), s = g.ownerSVGElement;
     for (const v of yt) {
       const yy = y(v);
       svg('line', { x1: padL, x2: w, y1: yy, y2: yy, stroke: grid, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g);
-      text(g, tick(v), { x: padL - 8, y: yy + 4, 'text-anchor': 'end', 'font-size': 12, fill: ink });
+      text(g, tick(v), { x: padL - 8, y: yy + 4, 'text-anchor': 'end', 'font-size': TYPE.axis, fill: ink });
     }
     const n = labels.length;
-    for (const i of xPicks(labels, w - padL, at)) {
-      const lab = String(labels[i]), tw = measure(s, lab, 12), xx = x(i);
+    const labelWidth = Math.max(0, ...labels.map(label => measure(s, label, TYPE.axis)));
+    const plotSpan = n > 1 ? x(n - 1) - x(0) : w - padL;
+    let previousRight = -Infinity;
+    for (const i of xPicks(labels, plotSpan, at, labelWidth)) {
+      const lab = String(labels[i]), tw = measure(s, lab, TYPE.axis), xx = x(i);
       // the first and last labels are pulled inside the plot; none runs past either edge
       let left = band ? xx - tw / 2 : i === 0 ? xx : i === n - 1 ? xx - tw : xx - tw / 2;
       left = Math.max(band ? 0 : padL, Math.min(w - tw, left));
       if (avoid && left < avoid[1] + 8 && left + tw > avoid[0] - 8) continue;
-      text(g, lab, { x: left, y: h - padB + 18, 'font-size': 12, fill: ink });
+      if (left < previousRight + 8) continue;
+      text(g, lab, { x: left, y: h - padB + 18, 'font-size': TYPE.axis, fill: ink, 'data-axis': 'x' });
+      previousRight = left + tw;
     }
   }
   // Annotation labels sit in rows above the plot, never on the data. A label sits beside the top of its own leader
@@ -144,7 +222,7 @@
     const opts = order.map((it) => {
       const out = [];
       for (const str of [it.label, it.short].filter(Boolean)) {
-        const tw = measure(s, str, 11) + (it.glyph ? 9 : 0), mid = it.span ? (it.x0 + it.x1) / 2 : 0;
+        const tw = measure(s, str, TYPE.note) + (it.glyph ? 9 : 0), mid = it.span ? (it.x0 + it.x1) / 2 : 0;
         const cands = it.fixed != null ? [[it.fixed, it.fixed + tw]] : it.span ? [[mid - tw / 2, mid + tw / 2], [it.x0, it.x0 + tw], [it.x1 - tw, it.x1]] : [[it.x + 4, it.x + 4 + tw], [it.x - 4 - tw, it.x - 4]];
         for (let row = 0; row < maxRows; row++) for (const [x0, x1] of cands) if (x0 >= 0 && x1 <= w) out.push({ ...it, text: str, isShort: str !== it.label, row, x0, x1 });
       }
@@ -187,7 +265,7 @@
       const base = padT - 9 - p.row * ROW;
       if (p.leader != null) svg('line', { x1: p.leader, x2: p.leader, y1: base - 8, y2: padT, stroke: ink, 'stroke-width': 1, opacity: 0.45, 'shape-rendering': 'crispEdges' }, g);
       if (p.glyph) svg('path', { d: p.glyph === 'up' ? `M${p.x0} ${base - 1}l3 -6l3 6z` : `M${p.x0} ${base - 7}l3 6l3 -6z`, fill: ink }, g);
-      text(g, p.text, { x: p.x0 + (p.glyph ? 9 : 0), y: base, 'font-size': 11, fill: p.colour || ink });
+      text(g, p.text, { x: p.x0 + (p.glyph ? 9 : 0), y: base, 'font-size': TYPE.note, fill: p.colour || ink });
     }
     const el2 = g.ownerSVGElement.parentNode; el2._warned = el2._warned || new Set();
     for (const d of N.dropped) {
@@ -213,10 +291,12 @@
       const yy = y(r.value);
       svg('line', { x1: padL, x2: w, y1: yy, y2: yy, stroke: ink, 'stroke-width': 1, 'stroke-dasharray': '4 4', opacity: 0.7 }, g);
       if (!r.label) continue;
-      const tw = measure(s, r.label, 11), right = r.at !== 'left';
-      const cand = [[right, -5], [right, 13], [!right, -5], [!right, 13]].map(([rt, dy]) => ({ x0: rt ? w - tw : padL + 4, x1: rt ? w : padL + 4 + tw, y0: yy + dy - 9, y1: yy + dy + 2, base: yy + dy }));
+      const caption = text(g, r.label, { 'font-size': TYPE.note, fill: ink });
+      const bounds = caption.getBBox(), tw = bounds.width, right = r.at !== 'left';
+      const cand = [[right, -5], [right, 13], [!right, -5], [!right, 13]].map(([rt, dy]) => ({ x0: rt ? w - tw : padL + 4, x1: rt ? w : padL + 4 + tw, y0: yy + dy + bounds.y, y1: yy + dy + bounds.y + bounds.height, base: yy + dy }));
       const b = cand.find((c) => !hits(c, lines) && !boxHits(c, boxes)) || cand[0];
-      text(g, r.label, { x: b.x0, y: b.base, 'font-size': 11, fill: ink });
+      caption.setAttribute('x', b.x0); caption.setAttribute('y', b.base);
+      boxes.push(b);
     }
   }
   // One style object per kind of mark draws both the mark and its legend swatch, so the two cannot drift apart.
@@ -233,7 +313,7 @@
     if (st.edge) svg('rect', { x, y, width: 3, height: h, rx: Math.min(r, 1.5), fill: st.edge }, parent);
     return n;
   }
-  const legendCss = ':where(.chart-legend){list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;line-height:16px;color:var(--muted,#5f6368)}:where(.chart-legend li){display:inline-flex;align-items:center;gap:6px;white-space:nowrap}:where(.chart-legend svg){flex:none;overflow:visible}@media (max-width:480px){:where(.chart-legend){display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}';
+  const legendCss = ':where(.chart-legend){list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--type-label,13px);line-height:var(--leading-label,20px);color:var(--muted,#5f6368)}:where(.chart-legend li){display:inline-flex;align-items:center;gap:6px;white-space:nowrap}:where(.chart-legend svg){flex:none;overflow:visible}@media (max-width:480px){:where(.chart-legend){display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}';
   function legendEl(items, target) {
     if (!document.getElementById('charts-legend-css')) { const st = document.createElement('style'); st.id = 'charts-legend-css'; st.textContent = legendCss; document.head.appendChild(st); }
     const ul = document.createElement('ul'); ul.className = 'chart-legend';
@@ -251,6 +331,7 @@
   const heightOf = (h) => (typeof h === 'function' ? h() : h);
 
   function line(el, { labels, series, format = fmt.int, tickFormat = null, height = 220, fill = false, min, max, step = false, annotations, reference, today = null, todayLabel = 'Today', endLabel = false, yTicks = null, xAt = null, legend = null, negColour = null }) {
+    if (!labels.length || !series.some(row => row.values.some(Number.isFinite))) return emptyChart(el);
     el._fmt = format;
     const colourOf = (sr, k) => sr.colour || (k === 0 ? css(el, '--chart-1', '#2f6fdf') : css(el, `--chart-${k + 1}`, css(el, '--chart-muted', '#a3a3a3')));
     const draw = () => {
@@ -261,7 +342,7 @@
       const yt = yTicks || ticks(min ?? Math.min(0, ...all), top, 4);
       const tick = tickFormat || format;
       const lastVal = series[0].values.filter((v) => v != null).at(-1);
-      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), 12))), padB = 26, padR = endLabel ? 10 + measure(s, format(lastVal), 12, 600) : 0;
+      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), TYPE.axis))), padB = 30, padR = endLabel ? 10 + measure(s, format(lastVal), TYPE.axis, 600) : 0;
       const x = (i) => padL + (i * (w - padL - padR)) / Math.max(1, labels.length - 1);
       // the peaks clipped by max are labelled in the rows above the plot, where the line leaves it
       const peaks = [];
@@ -271,7 +352,7 @@
       let N = prepNotes(s, annotations, x, w, peaks), { padT, y } = scale(N), todayBox = null;
       // the today label goes inside the plot on whichever side of its line no series crosses; failing that, above
       if (today != null && todayLabel) {
-        const cut = x(today), tw = measure(s, todayLabel, 11), lines = linesAt(y);
+        const cut = x(today), tw = measure(s, todayLabel, TYPE.note), lines = linesAt(y);
         const cand = [[cut + 4, h - padB - 6], [cut - 4 - tw, h - padB - 6], [cut + 4, padT + 11], [cut - 4 - tw, padT + 11]].map(([x0, b]) => ({ x0, x1: x0 + tw, y0: b - 9, y1: b + 2, base: b }));
         todayBox = cand.find((b) => b.x0 >= padL && b.x1 <= w && !hits(b, lines)) || null;
         if (!todayBox) { N = prepNotes(s, annotations, x, w, [...peaks, { x: cut, leader: cut, drawn: true, label: todayLabel }]); ({ padT, y } = scale(N)); }
@@ -295,34 +376,41 @@
           const b = svg('clipPath', { id: id + 'b' }, defs); svg('rect', { x: cut, y: 0, width: w, height: h }, b);
           made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round', 'clip-path': 'url(#' + id + 'a)' }, g));
           made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-dasharray': '5 4', opacity: 0.8, 'clip-path': 'url(#' + id + 'b)' }, g));
-          if (k === 0) { svg('line', { x1: cut, x2: cut, y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0.4 }, g); if (todayBox) text(g, todayLabel, { x: todayBox.x0, y: todayBox.base, 'font-size': 11, fill: css(el, '--axis-ink', '#6b6b6b') }); }
+          if (k === 0) { svg('line', { x1: cut, x2: cut, y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0.4 }, g); if (todayBox) text(g, todayLabel, { x: todayBox.x0, y: todayBox.base, 'font-size': TYPE.note, fill: css(el, '--axis-ink', '#6b6b6b') }); }
         }
         // ajuste local: o trecho abaixo de zero ganha negColour (positivo e negativo em cores diferentes)
         if (negColour && k === 0 && yt[0] < 0) { const y0 = y(0), nid = 'n' + Math.random().toString(36).slice(2, 8); const cp = svg('clipPath', { id: nid }, svg('defs', {}, g)); svg('rect', { x: 0, y: y0, width: w, height: Math.max(0, h - y0) }, cp); const gg = svg('g', { 'clip-path': 'url(#' + nid + ')' }, g); made.forEach((p) => { const c = p.cloneNode(); c.setAttribute('stroke', negColour); gg.appendChild(c); }); }
-        if (endLabel && k === 0) { const li = sr.values.map((v, i) => (v == null ? -1 : i)).filter((i) => i >= 0).at(-1); text(g, format(sr.values[li]), { x: x(li) + 6, y: y(Math.min(sr.values[li], yt.at(-1))) + 4, 'font-size': 12, 'font-weight': 600, fill: css(el, '--ink', '#111') }); }
+        if (endLabel && k === 0) { const li = sr.values.map((v, i) => (v == null ? -1 : i)).filter((i) => i >= 0).at(-1); text(g, format(sr.values[li]), { x: x(li) + 6, y: y(Math.min(sr.values[li], yt.at(-1))) + 4, 'font-size': TYPE.axis, 'font-weight': 600, fill: css(el, '--ink', '#111') }); }
       });
-      references(g, el, reference, { y, padL, w, lines: linesAt(y).slice(0, series.length) });
+      const labelBoxes = [...g.querySelectorAll('text')].map(node => { const b = node.getBBox(); return { x0: b.x, x1: b.x + b.width, y0: b.y, y1: b.y + b.height }; });
+      references(g, el, reference, { y, padL, w, lines: linesAt(y).slice(0, series.length), boxes: labelBoxes });
       notesOver(g, el, N, { padT, h, padB });
-      // hover: a rule, a dot per series and a bare tooltip
-      const tip = tooltip(el), rule = svg('line', { y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0 }, g);
+      // Consulta por ponteiro, toque ou teclado, com a mesma linha e marcadores.
+      const rule = svg('line', { y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0 }, g);
       const dots = series.map((sr, k) => svg('circle', { r: 3.5, fill: css(el, '--surface', '#fff'), stroke: colourOf(sr, k), 'stroke-width': 2, opacity: 0 }, g));
-      const hit = svg('rect', { x: padL, y: padT, width: w - padL, height: h - padT - padB, fill: 'transparent' }, s);
-      const move = (ev) => { const r = s.getBoundingClientRect(); const px = ((ev.clientX - r.left) / r.width) * w; const i = Math.max(0, Math.min(labels.length - 1, Math.round(((px - padL) / (w - padL - padR)) * (labels.length - 1)))); rule.setAttribute('x1', x(i)); rule.setAttribute('x2', x(i)); rule.setAttribute('opacity', 0.35); series.forEach((sr, k) => { const v = sr.values[i]; dots[k].setAttribute('cx', x(i)); dots[k].setAttribute('cy', v == null ? -99 : y(Math.min(v, yt.at(-1)))); dots[k].setAttribute('opacity', v == null ? 0 : 1); }); tip.innerHTML = `<div style="opacity:.7">${esc(labels[i])}</div>` + series.map((sr) => `<div><b style="font-weight:600">${sr.values[i] == null ? '–' : esc(format(sr.values[i]))}</b> ${series.length > 1 ? esc(sr.name) : ''}</div>`).join(''); const left = Math.min((x(i) / w) * r.width + 12, r.width - tip.offsetWidth - 4); tip.style.left = `${Math.max(0, left)}px`; tip.style.top = '0px'; tip.style.opacity = 1; };
-      hit.addEventListener('pointermove', move); hit.addEventListener('pointerleave', () => { tip.style.opacity = 0; rule.setAttribute('opacity', 0); dots.forEach((d) => d.setAttribute('opacity', 0)); });
       const last = series[0].values.filter((v) => v != null).at(-1);
       s.setAttribute('aria-label', `${series.map((x) => x.name).join(', ')}, ${labels[0]} a ${labels.at(-1)}; último valor ${last == null ? 'sem dados' : format(last)}`);
+      chartControls(el, s, { labels, w, h, padL, padT, padB, x,
+        rows: i => series.map((row, k) => ({ label: row.name, text: row.values[i] == null ? '—' : format(row.values[i]), colour: colourOf(row, k) })),
+        onPoint: i => {
+          rule.setAttribute('opacity', i == null ? 0 : .35);
+          if (i != null) { rule.setAttribute('x1', x(i)); rule.setAttribute('x2', x(i)); }
+          series.forEach((row, k) => { const value = i == null ? null : row.values[i]; dots[k].setAttribute('opacity', value == null ? 0 : 1); if (value != null) { dots[k].setAttribute('cx', x(i)); dots[k].setAttribute('cy', y(Math.min(value, yt.at(-1)))); } });
+        }
+      });
     };
     draw(); watch(el, draw); settle(draw, el);
     const lg = series.length > 1 ? legendEl(series.map((sr, k) => ({ label: sr.name, w: 16, draw: (sw) => svg('line', { x1: 0, x2: 16, y1: 6, y2: 6, stroke: colourOf(sr, k), 'stroke-width': 2, 'stroke-dasharray': sr.dash ? '4 3' : null }, sw) })), legend) : null;
     return { legend: lg };
   }
   function bars(el, { labels, values, format = fmt.int, tickFormat = null, height = 200, highlight = null, dim = [], colour, mutedColour, annotations, reference, xAt = null }) {
+    if (!labels.length || !values.some(Number.isFinite)) return emptyChart(el);
     el._fmt = format;
     const lit = (i) => highlight == null || (Array.isArray(highlight) ? highlight.includes(i) : highlight === i);
     const draw = () => {
       const { s, w, h } = frame(el, heightOf(height));
       const yt = ticks(0, Math.max(...values, ...[].concat(reference || []).map((r) => r.value)), 4), tick = tickFormat || format;
-      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), 12))), padB = 26;
+      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), TYPE.axis))), padB = 30;
       const band = (w - padL) / values.length, bw = Math.max(2, band * 0.62);
       const x = (i) => padL + band * i + band / 2;
       const N = prepNotes(s, annotations, x, w), padT = LANE(N.rows);
@@ -336,6 +424,7 @@
       references(g, el, reference, { y, padL, w, boxes: values.map((v, i) => ({ x0: x(i) - bw / 2, x1: x(i) + bw / 2, y0: y(v), y1: y(0) })) });
       notesOver(g, el, N, { padT, h, padB });
       s.setAttribute('aria-label', `${labels.length} barras de ${labels[0]} a ${labels.at(-1)}; maior ${format(Math.max(...values))}`);
+      chartControls(el, s, { labels, w, h, padL, padT, padB, x, rows: i => [{ label: 'Valor', text: format(values[i]), colour: main }] });
     };
     draw(); watch(el, draw); settle(draw, el);
   }
@@ -343,6 +432,7 @@
   // income and spend). The axis says which is which, with signed ticks and a caption on each side of zero.
   // mark: [indices] draws those periods in a second tone with their own legend entry (the nights the car charged).
   function diverging(el, { labels, up, down, values, above = 'Above', below = 'Below', mark = [], markLabel = null, markSide = 'below', partial = null, format = fmt.int, tickFormat = null, height = 200, annotations, reference, xAt = null, legend = null, markTint = false }) {
+    if (!labels.length) return emptyChart(el);
     if (values) { up = values.map((v) => Math.max(0, v || 0)); down = values.map((v) => Math.max(0, -(v || 0))); }
     up = up || labels.map(() => 0); down = down || labels.map(() => 0);
     const st = { above: { fill: css(el, '--chart-1', '#2f6fdf') }, below: { fill: css(el, '--chart-muted', '#c9c9c9') }, mark: { fill: css(el, '--chart-mark', css(el, '--ink', '#111')) } };
@@ -352,16 +442,16 @@
       const { s, w, h } = frame(el, heightOf(height));
       const hiUp = Math.max(0, ...up), hiDown = Math.max(0, ...down);
       const yt = ticks(-hiDown, hiUp || 1, 4); const stp = yt[1] - yt[0]; if (hiDown > 0 && yt[0] >= -hiDown) yt.unshift(+(yt[0] - stp).toFixed(10));
-      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), 12))), padB = 26;
+      const padL = 12 + Math.max(...yt.map((v) => measure(s, tick(v), TYPE.axis))), padB = 30;
       const band = (w - padL) / labels.length, bw = Math.max(2, band * 0.62);
       const x = (i) => padL + band * i + band / 2;
       // the caption for the upper side opens the label rows above the plot; the lower one sits under the plot, at left
       const N = prepNotes(s, annotations, x, w, [{ fixed: padL, glyph: 'up', label: above }]), padT = LANE(N.rows);
       const y = (v) => padT + (h - padT - padB) * (1 - (v - yt[0]) / (yt.at(-1) - yt[0]));
       const g = svg('g', {}, s), ink = css(el, '--axis-ink', '#6b6b6b');
-      const bwid = measure(s, below, 11) + 9;
+      const bwid = measure(s, below, TYPE.note) + 9;
       axes(g, el, { w, h, padL, padB, yt, y, labels, x, band: true, at: xAt, tick, avoid: [padL, padL + bwid] });
-      svg('path', { d: `M${padL} ${h - padB + 11}l3 6l3 -6z`, fill: ink }, g); text(g, below, { x: padL + 9, y: h - padB + 18, 'font-size': 11, fill: ink });
+      svg('path', { d: `M${padL} ${h - padB + 11}l3 6l3 -6z`, fill: ink }, g); text(g, below, { x: padL + 9, y: h - padB + 18, 'font-size': TYPE.note, fill: ink });
       notesUnder(g, el, N, { padT, h, padB });
       for (const it of N.items) if (it.at != null) it.end = y(up[it.at] || 0) - 4;
       labels.forEach((lab, i) => {
@@ -373,6 +463,11 @@
       references(g, el, reference, { y, padL, w, boxes: labels.map((_, i) => ({ x0: x(i) - bw / 2, x1: x(i) + bw / 2, y0: y(up[i]), y1: y(-down[i]) })) });
       notesOver(g, el, N, { padT, h, padB });
       s.setAttribute('aria-label', `${above} acima da linha e ${below} abaixo, de ${labels[0]} a ${labels.at(-1)}`);
+      const guide = svg('line', { y1: padT, y2: h - padB, stroke: ink, 'stroke-width': 1, opacity: 0 }, g);
+      chartControls(el, s, { labels, w, h, padL, padT, padB, x,
+        rows: i => [{ label: above, text: format(up[i]), colour: st.above.fill }, { label: below, text: format(-down[i]), colour: st.below.fill }],
+        onPoint: i => { guide.setAttribute('opacity', i == null ? 0 : .35); if (i != null) { guide.setAttribute('x1', x(i)); guide.setAttribute('x2', x(i)); } }
+      });
     };
     draw(); watch(el, draw); settle(draw, el);
     const items = [];
@@ -389,7 +484,7 @@
     svg('circle', { cx: size / 2, cy: size / 2, r, fill: 'none', stroke: css(el, '--grid', '#e8e8e8'), 'stroke-width': stroke }, s);
     svg('circle', { cx: size / 2, cy: size / 2, r, fill: 'none', stroke: colour || css(el, '--chart-1', '#2f6fdf'), 'stroke-width': stroke, 'stroke-dasharray': `${c * v} ${c}`, transform: `rotate(-90 ${size / 2} ${size / 2})` }, s);
     const t = document.createElement('div'); t.style.cssText = 'position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-variant-numeric:tabular-nums';
-    t.innerHTML = `<div style="font-size:${Math.round(size / 5.5)}px;font-weight:600;line-height:1">${esc(label)}</div>${sub ? `<div style="font-size:12px;opacity:.7;margin-top:4px">${esc(sub)}</div>` : ''}`;
+    t.innerHTML = `<div style="font-size:var(--type-value,26px);font-family:var(--display,inherit);font-weight:600;line-height:1">${esc(label)}</div>${sub ? `<div style="font-size:var(--type-caption,12px);line-height:var(--leading-caption,18px);opacity:.7;margin-top:4px">${esc(sub)}</div>` : ''}`;
     wrap.appendChild(t); el.appendChild(wrap);
   }
   // A ranked list. By default the row's fill is the bar (a one-figure list); thin: true puts a 2px grey bar under each
@@ -397,11 +492,10 @@
   function barList(el, rows, { format = fmt.int, colour, thin = false, all = false } = {}) {
     el.innerHTML = '';
     const max = Math.max(...rows.map((r) => r.value)) || 1;
-    const list = document.createElement('ol'); list.style.cssText = `list-style:none;margin:0;padding:0;display:grid;gap:${thin ? 10 : 2}px;font-variant-numeric:tabular-nums`;
-    const valueCol = Math.max(...rows.map((r) => String(format(r.value)).length)) + 1;
+    const list = document.createElement('ol'); list.className = 'chart-ranked-list'; list.style.cssText = `list-style:none;margin:0;padding:0;display:grid;gap:${thin ? 10 : 2}px;font-variant-numeric:tabular-nums`;
     rows.forEach((r, k) => {
-      const li = document.createElement('li'); li.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) ' + valueCol + 'ch;align-items:center;column-gap:12px';
-      const a = document.createElement('span'); a.textContent = r.label; a.style.cssText = 'position:relative;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+      const li = document.createElement('li'); li.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:center;column-gap:12px';
+      const a = document.createElement('span'); a.textContent = r.label; a.title = r.label; a.style.cssText = 'position:relative;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
       const b = document.createElement('span'); b.textContent = format(r.value); b.style.cssText = 'font-weight:500;text-align:right';
       if (thin) {
         const bar = document.createElement('span'); bar.style.cssText = `grid-column:1 / -1;height:2px;margin-top:4px;width:${(r.value / max) * 100}%;background:${k === 0 || all ? colour || 'var(--ink,#111)' : 'var(--chart-muted,#c9c9c9)'}`;
@@ -458,8 +552,8 @@
   // A subline needs a 40-44px row pitch; one-line labels sit on 32px.
   function rowLabel(g, s, el, r, { y0, pitch, lw }) {
     const ink = css(el, '--ink', '#111'), muted = css(el, '--axis-ink', '#6b6b6b');
-    if (r.sub) { text(g, fit(s, r.label, lw - 12, 14), { x: 0, y: y0 + pitch / 2 - 3, 'font-size': 14, fill: ink }); text(g, fit(s, r.sub, lw - 12, 12), { x: 0, y: y0 + pitch / 2 + 13, 'font-size': 12, fill: muted }); }
-    else text(g, fit(s, r.label, lw - 12, 14), { x: 0, y: y0 + pitch / 2 + 5, 'font-size': 14, fill: ink });
+    if (r.sub) { text(g, fit(s, r.label, lw - 12, TYPE.body), { x: 0, y: y0 + pitch / 2 - 3, 'font-size': TYPE.body, fill: ink }); text(g, fit(s, r.sub, lw - 12, TYPE.axis), { x: 0, y: y0 + pitch / 2 + 13, 'font-size': TYPE.axis, fill: muted }); }
+    else text(g, fit(s, r.label, lw - 12, TYPE.body), { x: 0, y: y0 + pitch / 2 + 5, 'font-size': TYPE.body, fill: ink });
   }
   const dayText = (d) => (typeof d === 'object' && d ? d.label : String(d));
   // day headers: the full label when every one fits its column, else the short form ('19'), else every k-th short
@@ -467,11 +561,11 @@
   function dayHeads(g, s, el, days, { x0, cw, y, today }) {
     const ink = css(el, '--ink', '#111'), muted = css(el, '--axis-ink', '#6b6b6b');
     const full = days.map(dayText), short = days.map((d) => (typeof d === 'object' && d ? d.short || dayText(d) : dayText(d).split(' ').at(-1)));
-    const wide = (labs) => Math.max(...labs.map((t) => measure(s, t, 12))) + 6;
+    const wide = (labs) => Math.max(...labs.map((t) => measure(s, t, TYPE.axis))) + 6;
     const labs = wide(full) <= cw ? full : short, k = Math.max(1, Math.ceil(wide(labs) / cw));
     labs.forEach((t, i) => {
       if (i !== today && (i % k || (today != null && k > 1 && Math.abs(i - today) < k))) return;
-      text(g, t, { x: x0 + i * cw + cw / 2, y, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': i === today ? 600 : 400, fill: i === today ? ink : muted });
+      text(g, t, { x: x0 + i * cw + cw / 2, y, 'text-anchor': 'middle', 'font-size': TYPE.axis, 'font-weight': i === today ? 600 : 400, fill: i === today ? ink : muted });
     });
   }
   // The style of each kind of booking: a pale fill, a 1px diagonal hatch, a darker grey step, an outline, or the one
@@ -511,7 +605,7 @@
       if (today != null) svg('line', { x1: col(today) + cw / 2, x2: col(today) + cw / 2, y1: head, y2: h, stroke: hue, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g);
       let y0 = head;
       for (const r of rows) {
-        if (r.group) { svg('line', { x1: 0, x2: w, y1: y0 + 0.5, y2: y0 + 0.5, stroke: rule, 'stroke-width': 1 }, g); text(g, r.group, { x: 0, y: y0 + 20, 'font-size': 12, 'font-weight': 500, fill: muted }); y0 += groupH; continue; }
+        if (r.group) { svg('line', { x1: 0, x2: w, y1: y0 + 0.5, y2: y0 + 0.5, stroke: rule, 'stroke-width': 1 }, g); text(g, r.group, { x: 0, y: y0 + 20, 'font-size': TYPE.axis, 'font-weight': 500, fill: muted }); y0 += groupH; continue; }
         rowLabel(g, s, el, r, { y0, pitch, lw });
         const bs = (r.bars || []).filter((b) => b.to >= 0 && b.from < days.length).sort((a, b) => a.from - b.from);
         bs.forEach((b, k) => {
@@ -519,13 +613,13 @@
           const x0 = col(Math.max(0, b.from)) + 2, x1 = col(Math.min(days.length - 1, b.to) + 1) - 2, by = y0 + (pitch - barHeight) / 2;
           const grp = svg('g', onSelect ? { tabindex: 0, role: 'button', style: 'cursor:pointer' } : {}, g);
           paintRect(grp, st, x0, by, x1 - x0, barHeight, 4);
-          const label = b.label ?? kind.label ?? '', code = b.code ?? kind.code, tw = measure(s, label, 12), labInk = kind.tone === 'negative' ? css(el, '--negative', '#c4242a') : ink;
+          const label = b.label ?? kind.label ?? '', code = b.code ?? kind.code, tw = measure(s, label, TYPE.axis), labInk = kind.tone === 'negative' ? css(el, '--negative', '#c4242a') : ink;
           const next = bs[k + 1] ? col(Math.max(0, bs[k + 1].from)) : w;
           // over a hatch the label keeps a halo of the bar's own fill, so the lines never run through the words
           const halo = st.hatch ? { stroke: st.fill, 'stroke-width': 4, 'stroke-linejoin': 'round', 'paint-order': 'stroke' } : {};
-          if (label && tw + 16 <= x1 - x0) text(grp, label, { x: x0 + 8 + (st.edge ? 2 : 0), y: by + barHeight / 2 + 4, 'font-size': 12, fill: labInk, ...halo });
-          else if (code && measure(s, code, 12) + 8 <= x1 - x0) text(grp, code, { x: (x0 + x1) / 2, y: by + barHeight / 2 + 4, 'text-anchor': 'middle', 'font-size': 12, fill: labInk, ...halo });
-          else if (label && x1 + 6 + tw <= Math.min(next - 6, w)) text(grp, label, { x: x1 + 6, y: by + barHeight / 2 + 4, 'font-size': 12, fill: kind.tone === 'negative' ? labInk : muted });
+          if (label && tw + 16 <= x1 - x0) text(grp, label, { x: x0 + 8 + (st.edge ? 2 : 0), y: by + barHeight / 2 + 4, 'font-size': TYPE.axis, fill: labInk, ...halo });
+          else if (code && measure(s, code, TYPE.axis) + 8 <= x1 - x0) text(grp, code, { x: (x0 + x1) / 2, y: by + barHeight / 2 + 4, 'text-anchor': 'middle', 'font-size': TYPE.axis, fill: labInk, ...halo });
+          else if (label && x1 + 6 + tw <= Math.min(next - 6, w)) text(grp, label, { x: x1 + 6, y: by + barHeight / 2 + 4, 'font-size': TYPE.axis, fill: kind.tone === 'negative' ? labInk : muted });
           titled(grp, `${r.label}: ${label}${b.note ? ' \u00b7 ' + b.note : ''}`, {});
           if (onSelect) { grp.addEventListener('click', () => onSelect(b, r)); grp.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(b, r); } }); }
         });
@@ -560,7 +654,7 @@
           const cx = lw + i * cw + 1;
           if (v == null) { svg('rect', { x: cx + cw / 2 - 4, y: cy + ch / 2 - 1, width: 6, height: 2, fill: muted }, g); return; }
           const st = ST[level(v)], cell = paintRect(g, { fill: st.fill }, cx, cy, cw - 2, ch, 3);
-          text(g, format(v), { x: cx + (cw - 2) / 2, y: cy + ch / 2 + 4, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': level(v) === 3 ? 600 : 400, fill: st.ink });
+          text(g, format(v), { x: cx + (cw - 2) / 2, y: cy + ch / 2 + 4, 'text-anchor': 'middle', 'font-size': TYPE.axis, 'font-weight': level(v) === 3 ? 600 : 400, fill: st.ink });
           titled(cell, `${r.label}, ${dayText(cols[i])}: ${r.titles?.[i] || format(v) + ' against the minimum'}`, {});
         });
       });
@@ -586,7 +680,7 @@
       const pitch = rowHeight || (narrow ? 62 : rows.some((r) => r.sub || r.note) ? 44 : 32);
       const { s, w, h } = frame(el, rows.length * pitch + axisH);
       const lw = narrow ? 0 : labelWidth || Math.round(Math.min(200, Math.max(110, w * 0.26)));
-      const vw = narrow ? 0 : valueWidth ?? Math.min(w * 0.32, Math.max(0, ...rows.map((r) => Math.max(r.value ? measure(s, r.value, 13, 500) : 0, r.note ? measure(s, r.note, 12) : 0))) + (rows.some((r) => r.value || r.note) ? 16 : 0));
+      const vw = narrow ? 0 : valueWidth ?? Math.min(w * 0.32, Math.max(0, ...rows.map((r) => Math.max(r.value ? measure(s, r.value, TYPE.value, 500) : 0, r.note ? measure(s, r.note, TYPE.axis) : 0))) + (rows.some((r) => r.value || r.note) ? 16 : 0));
       const x0 = narrow ? 18 : lw + 6, x1 = narrow ? w - 18 : w - vw - 6, tx = (m) => x0 + ((m - o) / Math.max(1, c - o)) * (x1 - x0);
       const ink = css(el, '--ink', '#111'), muted = css(el, '--axis-ink', '#6b6b6b'), rule = css(el, '--rule', '#f0f0f0');
       const track = css(el, '--chart-track', mix(el, ink, css(el, '--surface', '#fff'), 0.16));
@@ -594,23 +688,23 @@
       // the axis: one step from the opening, the labels thinned by the same rule as the charts
       const marks = []; for (let m = Math.ceil(o / step) * step; m <= c; m += step) marks.push(m);
       const picks = xPicks(marks.map(fmt.clock), x1 - x0);
-      for (const i of picks) { const xx = tx(marks[i]); if (!narrow) svg('line', { x1: xx, x2: xx, y1: 0, y2: plotH, stroke: rule, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g); const lab = fmt.clock(marks[i]), tw = measure(s, lab, 12); text(g, lab, { x: Math.max(x0 - 2, Math.min(x1 + 6 - tw, xx - tw / 2)), y: plotH + 17, 'font-size': 12, fill: muted }); }
+      for (const i of picks) { const xx = tx(marks[i]); if (!narrow) svg('line', { x1: xx, x2: xx, y1: 0, y2: plotH, stroke: rule, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g); const lab = fmt.clock(marks[i]), tw = measure(s, lab, TYPE.axis); text(g, lab, { x: Math.max(x0 - 2, Math.min(x1 + 6 - tw, xx - tw / 2)), y: plotH + 17, 'font-size': TYPE.axis, fill: muted }); }
       rows.forEach((r, k) => {
         const y0 = k * pitch, cy = narrow ? y0 + pitch - 12 : y0 + pitch / 2;
         if (narrow) {
-          const vwid = r.value ? measure(s, r.value, 13, 500) + 12 : 0;
-          text(g, fit(s, r.label, w - vwid, 14), { x: 0, y: y0 + 16, 'font-size': 14, fill: ink });
-          if (r.value) text(g, r.value, { x: w, y: y0 + 16, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink });
+          const vwid = r.value ? measure(s, r.value, TYPE.value, 500) + 12 : 0;
+          text(g, fit(s, r.label, w - vwid, TYPE.body), { x: 0, y: y0 + 16, 'font-size': TYPE.body, fill: ink });
+          if (r.value) text(g, r.value, { x: w, y: y0 + 16, 'text-anchor': 'end', 'font-size': TYPE.value, 'font-weight': 500, fill: ink });
           const second = [r.sub, r.note].filter(Boolean).join(' \u00b7 ');
-          if (second) text(g, fit(s, second, w, 12), { x: 0, y: y0 + 33, 'font-size': 12, fill: muted });
+          if (second) text(g, fit(s, second, w, TYPE.axis), { x: 0, y: y0 + 33, 'font-size': TYPE.axis, fill: muted });
         } else rowLabel(g, s, el, r, { y0, pitch, lw });
         svg('line', { x1: x0, x2: x1, y1: cy, y2: cy, stroke: track, 'stroke-width': 2, 'stroke-linecap': 'round' }, g);
         const cm = minutes(r.compare), am = minutes(r.at);
         if (cm != null) titled(tick(g, tx(cm), cy), `${compareLabel || 'Comparison'}: ${fmt.clock(cm)}`, {});
         if (am != null) titled(dot(g, tx(am), cy), `${todayLabel}: ${fmt.clock(am)}`, {});
         if (narrow) return;
-        if (r.note) { if (r.value) text(g, r.value, { x: w, y: cy - 3, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink }); text(g, fit(s, r.note, vw - 8, 12), { x: w, y: r.value ? cy + 13 : cy + 4, 'text-anchor': 'end', 'font-size': 12, fill: muted }); }
-        else if (r.value) text(g, r.value, { x: w, y: cy + 5, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink });
+        if (r.note) { if (r.value) text(g, r.value, { x: w, y: cy - 3, 'text-anchor': 'end', 'font-size': TYPE.value, 'font-weight': 500, fill: ink }); text(g, fit(s, r.note, vw - 8, TYPE.axis), { x: w, y: r.value ? cy + 13 : cy + 4, 'text-anchor': 'end', 'font-size': TYPE.axis, fill: muted }); }
+        else if (r.value) text(g, r.value, { x: w, y: cy + 5, 'text-anchor': 'end', 'font-size': TYPE.value, 'font-weight': 500, fill: ink });
       });
       s.setAttribute('aria-label', `${rows.length} rows between ${fmt.clock(o)} and ${fmt.clock(c)}`);
     };

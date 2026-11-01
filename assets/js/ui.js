@@ -16,6 +16,15 @@
   const currency = cents => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100).replace('-', '−');
   const date = value => value ? value.slice(0, 10).split('-').reverse().join('/') : '—';
   const badge = status => el('span', { class: 'pill ' + (/Vencid/.test(status) ? 'pill-neg' : /Pago|Recebido|Importado/.test(status) ? 'pill-pos' : /hoje/.test(status) ? 'pill-warn' : 'pill-neutral'), text: status });
+  let tableSequence = 0;
+  // Cor da moldura do navegador acompanha a aparência já aplicada pelo app.
+  const syncThemeColor = () => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--ground').trim();
+  };
+  new MutationObserver(syncThemeColor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncThemeColor);
+  syncThemeColor();
   function notify(message) {
     const node = document.getElementById('notification');
     node.textContent = message;
@@ -25,14 +34,21 @@
   }
   function dialog(title, content, { confirm, label = 'Confirmar' } = {}) {
     const node = el('dialog', { class: 'dialog', 'aria-labelledby': 'dialog-title' });
+    const heading = el('h2', { id: 'dialog-title', tabindex: '-1', text: title });
+    const topClose = el('button', { type: 'button', class: 'btn btn-ghost dialog-close', 'aria-label': 'Fechar janela', onclick: () => node.close() });
+    const closeIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    closeIcon.setAttribute('viewBox', '0 0 24 24'); closeIcon.setAttribute('aria-hidden', 'true');
+    closeIcon.innerHTML = '<path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>';
+    topClose.append(closeIcon);
     const close = el('button', { type: 'button', class: 'btn btn-ghost', text: 'Fechar', onclick: () => node.close() });
     const actions = el('div', { class: 'actions dialog-actions' }, close);
     if (confirm) actions.append(el('button', { type: 'button', class: 'btn btn-primary', text: label, onclick: () => { node.close(); confirm(); } }));
-    node.append(el('div', { class: 'dialog-head' }, el('h2', { id: 'dialog-title', text: title })), content, actions);
+    node.append(el('div', { class: 'dialog-head' }, heading, topClose), content, actions);
     node.addEventListener('close', () => node.remove());
     node.addEventListener('click', e => { if (e.target === node) { const r = node.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) node.close(); } });
     document.body.append(node);
     node.showModal();
+    heading.focus({ preventScroll: true }); node.scrollTop = 0;
     return node;
   }
   const csvValue = value => {
@@ -50,9 +66,10 @@
     notify(`${rows.length} registros exportados. ${context}`);
   }
   // A tabela recebe somente resultados da camada de cálculos. Estado preservado por instância.
-  function dataTable(host, { columns, rows, name, filters = [], dateKey, context = '' }) {
-    const state = { query: '', sort: null, dir: 1, page: 1, de: '', ate: '', filters: {} };
-    const input = el('input', { type: 'search', class: 'input', placeholder: 'Pesquisar registros…', 'aria-label': `Pesquisar ${name}` });
+  function dataTable(host, { columns, rows, name, filters = [], dateKey, context = '', state = { query: '', sort: null, dir: 1, page: 1, de: '', ate: '', filters: {} } }) {
+    const errorId = `table-error-${++tableSequence}`;
+    const input = el('input', { type: 'search', name: 'pesquisa', autocomplete: 'off', class: 'input', placeholder: 'Pesquisar registros…', 'aria-label': `Pesquisar ${name}` });
+    input.value = state.query;
     const toolbar = el('div', { class: 'filters' }, el('label', { class: 'field field-grow' }, el('span', { text: 'Pesquisar' }), input));
     const body = el('tbody'), head = el('thead'), table = el('table', { 'aria-label': name }, head, body);
     const empty = el('div', { class: 'empty', text: 'Nenhum registro encontrado. Altere os filtros ou importe os dados correspondentes.' });
@@ -63,37 +80,46 @@
     const exportBtn = el('button', { type: 'button', class: 'btn btn-ghost', text: 'Exportar CSV' });
     const controls = [];
     filters.forEach(filter => {
-      const select = el('select', { class: 'select', 'aria-label': filter.label }, el('option', { value: '', text: 'Todos' }), ...[...new Set(rows.map(r => r[filter.key]).filter(Boolean))].sort().map(value => el('option', { value, text: value })));
+      const select = el('select', { class: 'select', name: filter.key, 'aria-label': filter.label }, el('option', { value: '', text: 'Todos' }), ...[...new Set([...rows.map(r => r[filter.key]), state.filters[filter.key]].filter(Boolean))].sort().map(value => el('option', { value, text: value })));
+      select.value = state.filters[filter.key] || '';
       select.onchange = () => { state.filters[filter.key] = select.value; state.page = 1; draw(); };
       toolbar.append(el('label', { class: 'field' }, el('span', { text: filter.label }), select));
       controls.push(select);
     });
     if (dateKey) for (const [key, label] of [['de', 'De'], ['ate', 'Até']]) {
-      const field = el('input', { type: 'date', class: 'input', 'aria-label': label });
+      const field = el('input', { type: 'date', name: key, class: 'input', 'aria-label': label });
+      field.value = state[key];
       field.onchange = () => { state[key] = field.value; state.page = 1; draw(); };
       toolbar.append(el('label', { class: 'field' }, el('span', { text: label }), field));
       controls.push(field);
     }
     toolbar.append(el('button', { type: 'button', class: 'btn btn-text', text: 'Limpar', onclick: () => { Object.assign(state, { query: '', page: 1, de: '', ate: '', filters: {} }); input.value = ''; controls.forEach(c => { c.value = ''; }); draw(); } }), exportBtn);
-    const error = el('p', { class: 'field-error', role: 'alert' });
+    const error = el('p', { class: 'field-error', id: errorId, role: 'alert' });
     const filtered = () => rows.filter(row => (!state.query || columns.some(c => String(c.export ? c.export(row) : row[c.key] ?? '').toLocaleLowerCase('pt-BR').includes(state.query))) && Object.entries(state.filters).every(([key, value]) => !value || row[key] === value) && (!dateKey || ((!state.de || row[dateKey] >= state.de) && (!state.ate || row[dateKey] <= state.ate))));
     function draw() {
       const invalid = state.de && state.ate && state.de > state.ate;
       error.textContent = invalid ? 'A data final deve ser igual ou posterior à data inicial.' : '';
+      error.hidden = !invalid;
+      controls.filter(control => control.type === 'date').forEach(control => {
+        if (invalid) { control.setAttribute('aria-invalid', 'true'); control.setAttribute('aria-describedby', errorId); }
+        else { control.removeAttribute('aria-invalid'); control.removeAttribute('aria-describedby'); }
+      });
       exportBtn.disabled = !!invalid;
       let visible = invalid ? [] : filtered();
       if (state.sort) visible.sort((a, b) => {
         const x = a[state.sort], y = b[state.sort];
         return (typeof x === 'number' ? x - y : String(x ?? '').localeCompare(String(y ?? ''), 'pt-BR')) * state.dir;
       });
+      const focusedKey = head.contains(document.activeElement) ? document.activeElement.dataset.sortKey : null;
       head.replaceChildren(el('tr', {}, ...columns.map(c => {
-        const th = el('th', { class: c.numeric ? 'num' : '' });
+        const th = el('th', { class: c.numeric ? 'num' : '', scope: 'col' });
         if (c.key) {
           th.setAttribute('aria-sort', state.sort === c.key ? (state.dir === 1 ? 'ascending' : 'descending') : 'none');
-          th.append(el('button', { type: 'button', class: 'sort', text: c.label, onclick: () => { state.dir = state.sort === c.key ? -state.dir : 1; state.sort = c.key; draw(); } }));
+          th.append(el('button', { type: 'button', class: 'sort', 'data-sort-key': c.key, title: `Ordenar por ${c.label}`, text: c.label, onclick: () => { state.dir = state.sort === c.key ? -state.dir : 1; state.sort = c.key; draw(); } }));
         } else th.textContent = c.label;
         return th;
       })));
+      if (focusedKey) [...head.querySelectorAll('button')].find(button => button.dataset.sortKey === focusedKey)?.focus({ preventScroll: true });
       const pages = Math.max(1, Math.ceil(visible.length / 15));
       state.page = Math.min(state.page, pages);
       body.replaceChildren(...visible.slice((state.page - 1) * 15, state.page * 15).map(row => el('tr', {}, ...columns.map(c => el('td', { class: c.numeric ? 'num' : '' }, c.render ? c.render(row) : String(row[c.key] ?? '—'))))));
