@@ -102,7 +102,7 @@
   };
   const mix = (el, a, b, t) => { const p = rgb(el, a), q = rgb(el, b); return p && q ? `rgb(${p.map((v, i) => Math.round(v * t + q[i] * (1 - t))).join(',')})` : a; };
   // text width, measured in the chart's own face (falls back to an estimate when the chart is hidden)
-  const measure = (s, str, size = 11, weight = 400) => { const t = text(s, str, { x: -999, y: -999, 'font-size': size, 'font-weight': weight, visibility: 'hidden' }); let wd = 0; try { wd = t.getComputedTextLength(); } catch {} t.remove(); return wd > 0 ? wd : String(str).length * size * 0.56; };
+  const measure = (s, str, size = 13, weight = 400) => { const t = text(s, str, { x: -999, y: -999, 'font-size': size, 'font-weight': weight, visibility: 'hidden' }); let wd = 0; try { wd = t.getComputedTextLength(); } catch {} t.remove(); return wd > 0 ? wd : String(str).length * size * 0.56; };
   const fit = (s, str, max, size, weight) => { str = String(str); if (measure(s, str, size, weight) <= max) return str; while (str.length > 1 && measure(s, str + '\u2026', size, weight) > max) str = str.slice(0, -1); return str.trimEnd() + '\u2026'; };
   function frame(el, h) {
     el.innerHTML = '';
@@ -112,7 +112,7 @@
   }
   function tooltip(el) {
     let t = el.querySelector('.chart-tip');
-    if (!t) { t = document.createElement('div'); t.className = 'chart-tip'; t.style.cssText = 'position:absolute;pointer-events:none;padding:6px 8px;font:inherit;font-size:12px;line-height:1.35;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity 120ms ease;background:var(--surface,#fff);color:var(--ink,#111);border:1px solid var(--grid,#e5e7eb)'; if (getComputedStyle(el).position === 'static') el.style.position = 'relative'; el.appendChild(t); }
+    if (!t) { t = document.createElement('div'); t.className = 'chart-tip'; t.style.cssText = 'position:absolute;pointer-events:none;padding:6px 8px;font:inherit;font-size:14px;line-height:1.35;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity 120ms ease;background:var(--surface,#fff);color:var(--ink,#111);border:1px solid var(--grid,#e5e7eb)'; if (getComputedStyle(el).position === 'static') el.style.position = 'relative'; el.appendChild(t); }
     return t;
   }
   function axes(g, el, { w, h, padL, padB, yt, y, labels, x, band = false, at = null, tick, avoid = null }) {
@@ -120,16 +120,16 @@
     for (const v of yt) {
       const yy = y(v);
       svg('line', { x1: padL, x2: w, y1: yy, y2: yy, stroke: grid, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g);
-      text(g, tick(v), { x: padL - 8, y: yy + 4, 'text-anchor': 'end', 'font-size': 12, fill: ink });
+      text(g, tick(v), { x: padL - 8, y: yy + 4, 'text-anchor': 'end', 'font-size': 15, fill: ink });
     }
     const n = labels.length;
     for (const i of xPicks(labels, w - padL, at)) {
-      const lab = String(labels[i]), tw = measure(s, lab, 12), xx = x(i);
+      const lab = String(labels[i]), tw = measure(s, lab, 14), xx = x(i);
       // the first and last labels are pulled inside the plot; none runs past either edge
       let left = band ? xx - tw / 2 : i === 0 ? xx : i === n - 1 ? xx - tw : xx - tw / 2;
       left = Math.max(band ? 0 : padL, Math.min(w - tw, left));
       if (avoid && left < avoid[1] + 8 && left + tw > avoid[0] - 8) continue;
-      text(g, lab, { x: left, y: h - padB + 18, 'font-size': 12, fill: ink });
+      text(g, lab, { x: left, y: h - padB + 18, 'font-size': 15, fill: ink });
     }
   }
   // Annotation labels sit in rows above the plot, never on the data. A label sits beside the top of its own leader
@@ -187,7 +187,7 @@
       const base = padT - 9 - p.row * ROW;
       if (p.leader != null) svg('line', { x1: p.leader, x2: p.leader, y1: base - 8, y2: padT, stroke: ink, 'stroke-width': 1, opacity: 0.45, 'shape-rendering': 'crispEdges' }, g);
       if (p.glyph) svg('path', { d: p.glyph === 'up' ? `M${p.x0} ${base - 1}l3 -6l3 6z` : `M${p.x0} ${base - 7}l3 6l3 -6z`, fill: ink }, g);
-      text(g, p.text, { x: p.x0 + (p.glyph ? 9 : 0), y: base, 'font-size': 11, fill: p.colour || ink });
+      text(g, p.text, { x: p.x0 + (p.glyph ? 9 : 0), y: base, 'font-size': 13, fill: p.colour || ink });
     }
     const el2 = g.ownerSVGElement.parentNode; el2._warned = el2._warned || new Set();
     for (const d of N.dropped) {
@@ -216,7 +216,7 @@
       const tw = measure(s, r.label, 11), right = r.at !== 'left';
       const cand = [[right, -5], [right, 13], [!right, -5], [!right, 13]].map(([rt, dy]) => ({ x0: rt ? w - tw : padL + 4, x1: rt ? w : padL + 4 + tw, y0: yy + dy - 9, y1: yy + dy + 2, base: yy + dy }));
       const b = cand.find((c) => !hits(c, lines) && !boxHits(c, boxes)) || cand[0];
-      text(g, r.label, { x: b.x0, y: b.base, 'font-size': 11, fill: ink });
+      text(g, r.label, { x: b.x0, y: b.base, 'font-size': 13, fill: ink });
     }
   }
   // One style object per kind of mark draws both the mark and its legend swatch, so the two cannot drift apart.
@@ -233,7 +233,7 @@
     if (st.edge) svg('rect', { x, y, width: 3, height: h, rx: Math.min(r, 1.5), fill: st.edge }, parent);
     return n;
   }
-  const legendCss = ':where(.chart-legend){list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;line-height:16px;color:var(--muted,#5f6368)}:where(.chart-legend li){display:inline-flex;align-items:center;gap:6px;white-space:nowrap}:where(.chart-legend svg){flex:none;overflow:visible}@media (max-width:480px){:where(.chart-legend){display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}';
+  const legendCss = ':where(.chart-legend){list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;line-height:20px;color:var(--muted,#5f6368)}:where(.chart-legend li){display:inline-flex;align-items:center;gap:6px;white-space:nowrap}:where(.chart-legend svg){flex:none;overflow:visible}@media (max-width:480px){:where(.chart-legend){display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}';
   function legendEl(items, target) {
     if (!document.getElementById('charts-legend-css')) { const st = document.createElement('style'); st.id = 'charts-legend-css'; st.textContent = legendCss; document.head.appendChild(st); }
     const ul = document.createElement('ul'); ul.className = 'chart-legend';
@@ -295,11 +295,11 @@
           const b = svg('clipPath', { id: id + 'b' }, defs); svg('rect', { x: cut, y: 0, width: w, height: h }, b);
           made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round', 'clip-path': 'url(#' + id + 'a)' }, g));
           made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-dasharray': '5 4', opacity: 0.8, 'clip-path': 'url(#' + id + 'b)' }, g));
-          if (k === 0) { svg('line', { x1: cut, x2: cut, y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0.4 }, g); if (todayBox) text(g, todayLabel, { x: todayBox.x0, y: todayBox.base, 'font-size': 11, fill: css(el, '--axis-ink', '#6b6b6b') }); }
+          if (k === 0) { svg('line', { x1: cut, x2: cut, y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0.4 }, g); if (todayBox) text(g, todayLabel, { x: todayBox.x0, y: todayBox.base, 'font-size': 13, fill: css(el, '--axis-ink', '#6b6b6b') }); }
         }
         // ajuste local: o trecho abaixo de zero ganha negColour (positivo e negativo em cores diferentes)
         if (negColour && k === 0 && yt[0] < 0) { const y0 = y(0), nid = 'n' + Math.random().toString(36).slice(2, 8); const cp = svg('clipPath', { id: nid }, svg('defs', {}, g)); svg('rect', { x: 0, y: y0, width: w, height: Math.max(0, h - y0) }, cp); const gg = svg('g', { 'clip-path': 'url(#' + nid + ')' }, g); made.forEach((p) => { const c = p.cloneNode(); c.setAttribute('stroke', negColour); gg.appendChild(c); }); }
-        if (endLabel && k === 0) { const li = sr.values.map((v, i) => (v == null ? -1 : i)).filter((i) => i >= 0).at(-1); text(g, format(sr.values[li]), { x: x(li) + 6, y: y(Math.min(sr.values[li], yt.at(-1))) + 4, 'font-size': 12, 'font-weight': 600, fill: css(el, '--ink', '#111') }); }
+        if (endLabel && k === 0) { const li = sr.values.map((v, i) => (v == null ? -1 : i)).filter((i) => i >= 0).at(-1); text(g, format(sr.values[li]), { x: x(li) + 6, y: y(Math.min(sr.values[li], yt.at(-1))) + 4, 'font-size': 14, 'font-weight': 600, fill: css(el, '--ink', '#111') }); }
       });
       references(g, el, reference, { y, padL, w, lines: linesAt(y).slice(0, series.length) });
       notesOver(g, el, N, { padT, h, padB });
@@ -361,7 +361,7 @@
       const g = svg('g', {}, s), ink = css(el, '--axis-ink', '#6b6b6b');
       const bwid = measure(s, below, 11) + 9;
       axes(g, el, { w, h, padL, padB, yt, y, labels, x, band: true, at: xAt, tick, avoid: [padL, padL + bwid] });
-      svg('path', { d: `M${padL} ${h - padB + 11}l3 6l3 -6z`, fill: ink }, g); text(g, below, { x: padL + 9, y: h - padB + 18, 'font-size': 11, fill: ink });
+      svg('path', { d: `M${padL} ${h - padB + 11}l3 6l3 -6z`, fill: ink }, g); text(g, below, { x: padL + 9, y: h - padB + 18, 'font-size': 13, fill: ink });
       notesUnder(g, el, N, { padT, h, padB });
       for (const it of N.items) if (it.at != null) it.end = y(up[it.at] || 0) - 4;
       labels.forEach((lab, i) => {
@@ -458,8 +458,8 @@
   // A subline needs a 40-44px row pitch; one-line labels sit on 32px.
   function rowLabel(g, s, el, r, { y0, pitch, lw }) {
     const ink = css(el, '--ink', '#111'), muted = css(el, '--axis-ink', '#6b6b6b');
-    if (r.sub) { text(g, fit(s, r.label, lw - 12, 14), { x: 0, y: y0 + pitch / 2 - 3, 'font-size': 14, fill: ink }); text(g, fit(s, r.sub, lw - 12, 12), { x: 0, y: y0 + pitch / 2 + 13, 'font-size': 12, fill: muted }); }
-    else text(g, fit(s, r.label, lw - 12, 14), { x: 0, y: y0 + pitch / 2 + 5, 'font-size': 14, fill: ink });
+    if (r.sub) { text(g, fit(s, r.label, lw - 12, 15), { x: 0, y: y0 + pitch / 2 - 3, 'font-size': 15, fill: ink }); text(g, fit(s, r.sub, lw - 12, 14), { x: 0, y: y0 + pitch / 2 + 13, 'font-size': 14, fill: muted }); }
+    else text(g, fit(s, r.label, lw - 12, 15), { x: 0, y: y0 + pitch / 2 + 5, 'font-size': 15, fill: ink });
   }
   const dayText = (d) => (typeof d === 'object' && d ? d.label : String(d));
   // day headers: the full label when every one fits its column, else the short form ('19'), else every k-th short
@@ -471,7 +471,7 @@
     const labs = wide(full) <= cw ? full : short, k = Math.max(1, Math.ceil(wide(labs) / cw));
     labs.forEach((t, i) => {
       if (i !== today && (i % k || (today != null && k > 1 && Math.abs(i - today) < k))) return;
-      text(g, t, { x: x0 + i * cw + cw / 2, y, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': i === today ? 600 : 400, fill: i === today ? ink : muted });
+      text(g, t, { x: x0 + i * cw + cw / 2, y, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': i === today ? 600 : 400, fill: i === today ? ink : muted });
     });
   }
   // The style of each kind of booking: a pale fill, a 1px diagonal hatch, a darker grey step, an outline, or the one
@@ -511,7 +511,7 @@
       if (today != null) svg('line', { x1: col(today) + cw / 2, x2: col(today) + cw / 2, y1: head, y2: h, stroke: hue, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g);
       let y0 = head;
       for (const r of rows) {
-        if (r.group) { svg('line', { x1: 0, x2: w, y1: y0 + 0.5, y2: y0 + 0.5, stroke: rule, 'stroke-width': 1 }, g); text(g, r.group, { x: 0, y: y0 + 20, 'font-size': 12, 'font-weight': 500, fill: muted }); y0 += groupH; continue; }
+        if (r.group) { svg('line', { x1: 0, x2: w, y1: y0 + 0.5, y2: y0 + 0.5, stroke: rule, 'stroke-width': 1 }, g); text(g, r.group, { x: 0, y: y0 + 20, 'font-size': 14, 'font-weight': 500, fill: muted }); y0 += groupH; continue; }
         rowLabel(g, s, el, r, { y0, pitch, lw });
         const bs = (r.bars || []).filter((b) => b.to >= 0 && b.from < days.length).sort((a, b) => a.from - b.from);
         bs.forEach((b, k) => {
@@ -523,9 +523,9 @@
           const next = bs[k + 1] ? col(Math.max(0, bs[k + 1].from)) : w;
           // over a hatch the label keeps a halo of the bar's own fill, so the lines never run through the words
           const halo = st.hatch ? { stroke: st.fill, 'stroke-width': 4, 'stroke-linejoin': 'round', 'paint-order': 'stroke' } : {};
-          if (label && tw + 16 <= x1 - x0) text(grp, label, { x: x0 + 8 + (st.edge ? 2 : 0), y: by + barHeight / 2 + 4, 'font-size': 12, fill: labInk, ...halo });
-          else if (code && measure(s, code, 12) + 8 <= x1 - x0) text(grp, code, { x: (x0 + x1) / 2, y: by + barHeight / 2 + 4, 'text-anchor': 'middle', 'font-size': 12, fill: labInk, ...halo });
-          else if (label && x1 + 6 + tw <= Math.min(next - 6, w)) text(grp, label, { x: x1 + 6, y: by + barHeight / 2 + 4, 'font-size': 12, fill: kind.tone === 'negative' ? labInk : muted });
+          if (label && tw + 16 <= x1 - x0) text(grp, label, { x: x0 + 8 + (st.edge ? 2 : 0), y: by + barHeight / 2 + 4, 'font-size': 14, fill: labInk, ...halo });
+          else if (code && measure(s, code, 14) + 8 <= x1 - x0) text(grp, code, { x: (x0 + x1) / 2, y: by + barHeight / 2 + 4, 'text-anchor': 'middle', 'font-size': 14, fill: labInk, ...halo });
+          else if (label && x1 + 6 + tw <= Math.min(next - 6, w)) text(grp, label, { x: x1 + 6, y: by + barHeight / 2 + 4, 'font-size': 14, fill: kind.tone === 'negative' ? labInk : muted });
           titled(grp, `${r.label}: ${label}${b.note ? ' \u00b7 ' + b.note : ''}`, {});
           if (onSelect) { grp.addEventListener('click', () => onSelect(b, r)); grp.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(b, r); } }); }
         });
@@ -560,7 +560,7 @@
           const cx = lw + i * cw + 1;
           if (v == null) { svg('rect', { x: cx + cw / 2 - 4, y: cy + ch / 2 - 1, width: 6, height: 2, fill: muted }, g); return; }
           const st = ST[level(v)], cell = paintRect(g, { fill: st.fill }, cx, cy, cw - 2, ch, 3);
-          text(g, format(v), { x: cx + (cw - 2) / 2, y: cy + ch / 2 + 4, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': level(v) === 3 ? 600 : 400, fill: st.ink });
+          text(g, format(v), { x: cx + (cw - 2) / 2, y: cy + ch / 2 + 4, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': level(v) === 3 ? 600 : 400, fill: st.ink });
           titled(cell, `${r.label}, ${dayText(cols[i])}: ${r.titles?.[i] || format(v) + ' against the minimum'}`, {});
         });
       });
@@ -594,22 +594,22 @@
       // the axis: one step from the opening, the labels thinned by the same rule as the charts
       const marks = []; for (let m = Math.ceil(o / step) * step; m <= c; m += step) marks.push(m);
       const picks = xPicks(marks.map(fmt.clock), x1 - x0);
-      for (const i of picks) { const xx = tx(marks[i]); if (!narrow) svg('line', { x1: xx, x2: xx, y1: 0, y2: plotH, stroke: rule, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g); const lab = fmt.clock(marks[i]), tw = measure(s, lab, 12); text(g, lab, { x: Math.max(x0 - 2, Math.min(x1 + 6 - tw, xx - tw / 2)), y: plotH + 17, 'font-size': 12, fill: muted }); }
+      for (const i of picks) { const xx = tx(marks[i]); if (!narrow) svg('line', { x1: xx, x2: xx, y1: 0, y2: plotH, stroke: rule, 'stroke-width': 1, 'shape-rendering': 'crispEdges' }, g); const lab = fmt.clock(marks[i]), tw = measure(s, lab, 14); text(g, lab, { x: Math.max(x0 - 2, Math.min(x1 + 6 - tw, xx - tw / 2)), y: plotH + 17, 'font-size': 14, fill: muted }); }
       rows.forEach((r, k) => {
         const y0 = k * pitch, cy = narrow ? y0 + pitch - 12 : y0 + pitch / 2;
         if (narrow) {
           const vwid = r.value ? measure(s, r.value, 13, 500) + 12 : 0;
-          text(g, fit(s, r.label, w - vwid, 14), { x: 0, y: y0 + 16, 'font-size': 14, fill: ink });
+          text(g, fit(s, r.label, w - vwid, 14), { x: 0, y: y0 + 16, 'font-size': 15, fill: ink });
           if (r.value) text(g, r.value, { x: w, y: y0 + 16, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink });
           const second = [r.sub, r.note].filter(Boolean).join(' \u00b7 ');
-          if (second) text(g, fit(s, second, w, 12), { x: 0, y: y0 + 33, 'font-size': 12, fill: muted });
+          if (second) text(g, fit(s, second, w, 12), { x: 0, y: y0 + 33, 'font-size': 14, fill: muted });
         } else rowLabel(g, s, el, r, { y0, pitch, lw });
         svg('line', { x1: x0, x2: x1, y1: cy, y2: cy, stroke: track, 'stroke-width': 2, 'stroke-linecap': 'round' }, g);
         const cm = minutes(r.compare), am = minutes(r.at);
         if (cm != null) titled(tick(g, tx(cm), cy), `${compareLabel || 'Comparison'}: ${fmt.clock(cm)}`, {});
         if (am != null) titled(dot(g, tx(am), cy), `${todayLabel}: ${fmt.clock(am)}`, {});
         if (narrow) return;
-        if (r.note) { if (r.value) text(g, r.value, { x: w, y: cy - 3, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink }); text(g, fit(s, r.note, vw - 8, 12), { x: w, y: r.value ? cy + 13 : cy + 4, 'text-anchor': 'end', 'font-size': 12, fill: muted }); }
+        if (r.note) { if (r.value) text(g, r.value, { x: w, y: cy - 3, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink }); text(g, fit(s, r.note, vw - 8, 12), { x: w, y: r.value ? cy + 13 : cy + 4, 'text-anchor': 'end', 'font-size': 14, fill: muted }); }
         else if (r.value) text(g, r.value, { x: w, y: cy + 5, 'text-anchor': 'end', 'font-size': 13, 'font-weight': 500, fill: ink });
       });
       s.setAttribute('aria-label', `${rows.length} rows between ${fmt.clock(o)} and ${fmt.clock(c)}`);
