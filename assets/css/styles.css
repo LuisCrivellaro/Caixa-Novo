@@ -405,7 +405,7 @@ main:focus { outline: none; }
 @media (min-width: 1101px) { #geral .cols-2-1 { grid-template-columns: minmax(0, 1.85fr) minmax(280px, 1fr); } }
 @media (min-width: 901px) and (max-height: 850px) { .side { gap: 10px; padding-top: 18px; } .nav a { height: 32px; } }
 @media (max-width: 900px) { main { padding: 0 16px 32px; } .data-banner { margin-bottom: 20px; } .title-row .stamp { text-align: left; } .title-row > div:first-child { flex-basis: 100%; } .sheet { gap: 12px; } .sheet .nav a { height: 44px; font-size: var(--type-body); } .sheet .lockup-tile { max-width: 100px; padding: 8px; } }
-@media (max-width: 540px) { .title-row .actions { width: 100%; } }
+@media (max-width: 540px) { .title-row .actions { width: 100%; } .strip > div { border-right: 0 !important; } }
 @media (max-width: 360px) { .strip { grid-template-columns: minmax(0, 1fr); } .strip-lead { grid-column: 1; } .strip > div + div { border-left: 0; border-top: 1px solid var(--border); } }
 @media print { .side, .topbar, .data-banner a, .filters, .btn, .sheet, .settings-link { display: none !important; } .app { display: block; } main { padding: 0; } .tbl-wrap { max-height: none; overflow: visible; } }
 

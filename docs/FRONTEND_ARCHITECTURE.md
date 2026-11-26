@@ -2,7 +2,7 @@
 
 ## Diagnóstico e escopo
 
-O repositório é uma aplicação estática em HTML, CSS e JavaScript, com React restrito à navegação BranchedMenu e ao seletor RubberSegment do Fluxo de Caixa, sem banco de dados, API ou autenticação. A versão do pacote continua `0.1.0`. A implementação mantém as seis fontes JSON e a camada financeira declarativa.
+O repositório é uma aplicação estática em HTML, CSS e JavaScript, com React restrito ao menu lateral e ao seletor RubberSegment do Fluxo de Caixa, sem banco de dados, API ou autenticação. A versão do pacote continua `0.1.0`. A implementação mantém as seis fontes JSON e a camada financeira declarativa.
 
 O frontend consulta dados de exemplo distribuídos com o projeto ou planilhas importadas pelo usuário. Dados importados são locais ao navegador; não existe sincronização com servidor. Um aviso permanente distingue exemplos, fontes mistas e fontes totalmente importadas. Exportações também identificam essa origem. Falhas de leitura do armazenamento local são informadas no aviso.
 
@@ -12,16 +12,14 @@ O anexo recebido continha apenas o texto do escopo, sem a imagem de referência.
 
 | Arquivo | Responsabilidade |
 | --- | --- |
-| `index.html` | Estrutura, navegação, nove telas originais, carregamento e avisos globais |
+| `index.html` | Estrutura, sete telas (seis páginas e Configurações) com abas internas, barra de origem dos dados e carregamento |
 | `assets/css/styles.css` | Tokens, componentes, temas, layout, responsividade e impressão |
 | `assets/js/calculos.js` | Registro declarativo de cálculos e consultas; recebe fontes e devolve linhas |
 | `assets/js/charts.js` | Gráficos SVG existentes, com redimensionamento e navegação acessível |
 | `assets/js/ui.js` | Componentes compartilhados, tabelas, diálogo, mensagens e CSV |
-| `assets/js/workspace.js` | Cinco novas telas de consulta, detalhes de títulos e tabela do fluxo |
-| `assets/js/app.js` | Carga, cache, rotas, renderização original, filtros e importação/conciliação |
-| `assets/components/BranchedMenu/BranchedMenu.jsx` | Componente original React Bits adaptado para links, controle externo e badges |
-| `assets/components/BranchedMenu/BranchedMenu.css` | Estilos originais e ajustes de densidade, foco e tokens do Caixa-Novo |
-| `assets/components/navigation.jsx` | Cinco categorias, Hugeicons, estado compartilhado e ponte com o roteador |
+| `assets/js/workspace.js` | Tabelas de títulos, clientes, fornecedores, contas, movimentações, categorias e fluxo, com seus detalhes |
+| `assets/js/app.js` | Carga, cache, rotas e abas, indicadores, alertas, gráficos, fechamento, importação e conciliação |
+| `assets/components/navigation.jsx` | Menu plano com seis páginas, Hugeicons, badge de vencidos e ponte com o roteador |
 | `assets/components/RubberSegment/` | JSX/CSS originais React Bits, seleção controlada e animação elástica Motion |
 | `assets/components/flow-period.jsx` | Ponte do seletor com o estado único de período de `app.js` |
 | `assets/components/index.jsx` | Entrada única das duas ilhas React |
@@ -33,7 +31,7 @@ O anexo recebido continha apenas o texto do escopo, sem a imagem de referência.
 
 Também foram atualizados `README.md` e `package.json`; foram acrescentados `package-lock.json` e `.gitignore`. Os arquivos JSON de exemplos, o esquema das fontes e o gerador de dados permanecem preservados.
 
-Ordem dos scripts: `charts.js`, `calculos.js`, `ui.js`, `workspace.js`, bundle `branched-menu.js`, `app.js`. A versão de arquivo único respeita a mesma ordem e embute o bundle e seus estilos. React e React DOM são usados nas duas ilhas; Hugeicons no menu e Motion no seletor. O nome do bundle foi preservado para manter o carregamento estático existente. Esbuild é dependência de desenvolvimento.
+Ordem dos scripts: `charts.js`, `calculos.js`, `ui.js`, `workspace.js`, bundle `branched-menu.js`, `app.js`. A versão de arquivo único respeita a mesma ordem e embute o bundle e seus estilos. React e React DOM são usados nas duas ilhas; Hugeicons no menu e Motion no seletor. O nome do bundle (`branched-menu.*`) foi preservado para não mexer no empacotamento, embora o BranchedMenu tenha sido removido. Esbuild é dependência de desenvolvimento.
 
 ## RubberSegment e período do fluxo
 
@@ -73,7 +71,7 @@ Os tons de texto são mais escuros que as referências iniciais para manter legi
 - Espaçamento: unidades usuais de 4, 8, 12, 16, 20 e 24px; gap principal de 18px.
 - Raios: cards de 10px, elementos internos de 7px e controles de 6px.
 - Sombras: quase imperceptíveis em cards; destaque de elevação reservado a diálogos e mensagens.
-- Ícones: Hugeicons na navegação BranchedMenu, SVG locais nas demais telas; ícones decorativos ignorados por leitores de tela.
+- Ícones: Hugeicons no menu lateral, SVG locais nas demais telas; ícones decorativos ignorados por leitores de tela.
 - Valores alinhados à direita, algarismos tabulares, BRL e datas `dd/mm/aaaa`. Valores de saída levam sinal `−`; recebimentos nos títulos levam `+`. Status usam texto além de cor.
 - Controles têm foco visível, estados desabilitados e transições curtas. `prefers-reduced-motion` desativa transições.
 
@@ -81,36 +79,36 @@ Os tons de texto são mais escuros que as referências iniciais para manter legi
 
 Rotas por hash, sem recarga completa, compatíveis com hospedagem estática e com o HTML único. As URLs anteriores continuam válidas.
 
-A navegação usa a [fonte JavaScript/CSS oficial do BranchedMenu](https://reactbits.dev/c/micro/branched-menu), preservando o desenho SVG dos ramos, animação do caminho ativo, indicador deslizante, múltiplas seções abertas e parâmetros do componente. As adaptações acrescentam `activeValue` e `openSections` controlados, links nativos com `href`, badges, ícones nos cabeçalhos, `aria-controls`, `aria-current="page"`, foco visível e `inert` nos grupos fechados. Os tempos de desenho/dobra são configurados em 200/180ms; a preferência por movimento reduzido continua respeitada.
+A reformulação simplificada trocou o BranchedMenu (seções expansíveis com ramos SVG) por uma lista plana de seis páginas, sem grupos nem rolagem. Configurações fica no rodapé da sidebar; os botões de tema vivem em Configurações > Aparência. O bloco da empresa saiu da sidebar, porque repetia a barra superior.
 
-`navigation.jsx` monta duas instâncias isoladas, para sidebar e menu móvel, com um estado compartilhado via `useSyncExternalStore`. A ponte `window.CaixaMenu.setActive(view)` recebe a rota já resolvida por `app.js`; `setReceivableCount(n)` recebe a mesma consulta de vencidos utilizada antes. O componente não lê fontes financeiras nem renderiza páginas. Os identificadores das seções abertas são persistidos em `mn-menu-secoes`, com validação e fallback em memória. Uma nova rota abre sua seção se ela estiver recolhida; as demais mantêm o estado.
+`navigation.jsx` monta o menu na sidebar e no menu móvel (`[data-menu]`), com estado compartilhado via `useSyncExternalStore`. A ponte `window.CaixaMenu.setActive(view)` recebe a rota já resolvida por `app.js`; `setReceivableCount(n)` recebe a contagem de recebimentos vencidos. O componente não lê fontes financeiras nem renderiza páginas. O menu móvel mantém Escape, foco preso no painel e fechamento ao navegar.
 
-O cabeçalho e o rodapé da sidebar foram preservados, assim como a largura de 224px e o fundo calculado com os tokens existentes de cada tema. Somente a área intermediária rola. O menu móvel mantém Escape, foco modal e fechamento ao navegar; itens de grupos fechados são excluídos da sequência de Tab. A geometria dos ramos acompanha as linhas de 44px no desktop e 48px no celular. A licença React Bits está preservada em `docs/licenses/react-bits.md` e no bundle.
+Abas internas são links `nav.subnav a[data-sub]` com endereço `#<tela>/<aba>`; o roteador mostra o painel `[data-panel="<aba>"]` correspondente, esconde os outros e marca `aria-current="page"`. Sem aba no endereço, abre a primeira. As tabelas guardam pesquisa, filtros e página entre trocas de aba.
 
-| Rota | Conteúdo conectado |
+| Rota | Conteúdo |
 | --- | --- |
-| `#geral` | Saldo informado, entradas/saídas/resultado do mês, carteira, vencidos, projeção, alertas, prazos, próximos vencimentos e resumo do dia |
-| `#fluxo` | Gráfico diário/semanal/mensal, comparação de categorias e tabela filtrável/exportável de realizado e previsto |
-| `#receber` | Títulos individuais, detalhes e movimentos vinculados, situação, carteira, envelhecimento, pagadores, crédito e repasses de cartão |
-| `#pagar` | Histórico de títulos, detalhes, calendário com consulta por dia, abertos, categorias e abatimentos |
-| `#fechamento` | Fechamentos por dia, gaveta, responsáveis e diferenças |
-| `#lancamentos` | Movimentos realizados, detalhes, pesquisa, filtros, ordenação e carregamento adicional |
-| `#indicadores` | Indicadores existentes e despesas operacionais |
-| `#conciliacao` | Importação OFX/CSV/Excel, mapeamento e conferência com movimentos da conta selecionada |
-| `#dados` | Importação das seis fontes, conferência, confirmação, persistência local e restauração de exemplos |
-| `#contas` | Cards com saldos da fonte e acesso aos movimentos filtrados por conta |
-| `#pessoas` | Clientes da fonte e fornecedores únicos dos títulos a pagar, com busca, filtro e CSV |
-| `#categorias` | Categorias utilizadas em movimentos e títulos a pagar, com tipo e contagem de registros |
-| `#relatorios` | Movimentações, contas a pagar/receber e fluxo; pesquisa, datas, filtros e exportação CSV |
-| `#configuracoes` | Aparência, origem de dados, data da posição e acesso à importação |
+| `#geral` | Saldo disponível, total a receber, total a pagar e saldo projetado em 30 dias; saldo projetado de 90 dias com linha do mínimo; alertas por gravidade (três visíveis e "Ver mais"); resumo do dia |
+| `#fluxo` | Seletor de período; entradas, saídas e resultado do período atual (parcial até a posição) contra o anterior completo; gráfico; bloco recolhido "Detalhamento" com abas Por categoria e Por período (tabela com CSV) |
+| `#receber/titulos`, `#receber/clientes` | Em aberto, vencido e a vencer em 7 dias; títulos em aberto com vencidos primeiro e "Mais filtros" (forma, vendedor, rota); clientes com saldo, vencido, nota de pagador e limite |
+| `#pagar/titulos`, `#pagar/fornecedores` | Os mesmos três indicadores; títulos com detalhes de documento, categoria e abatimento; fornecedores com saldo em aberto, vencido e próximo vencimento |
+| `#tesouraria/contas` | Saldos informados pela fonte, total e atalho para as movimentações da conta |
+| `#tesouraria/movimentacoes` | Movimentos realizados com filtros de tipo, conta e período, "Mais filtros" (categoria, forma), detalhes e CSV |
+| `#tesouraria/fechamento` | Dia, esperado, contado e diferença; o dia abre os itens da gaveta |
+| `#tesouraria/conciliacao` | Importação OFX/CSV/Excel do extrato e conferência com as movimentações da conta |
+| `#resultados` | Faturamento em 30 dias, margem bruta estimada, despesas operacionais e inadimplência; gráfico mensal de faturamento e despesas; principais despesas; indicadores complementares recolhidos |
+| `#configuracoes/dados`, `/categorias`, `/aparencia` | Fontes, importação e conferência; categorias usadas nas fontes; tema |
 
-`#receber/vencidos` e `#receber/limite` mantêm os filtros dos alertas. A data de referência vem de `contas[0].data_saldo`, conforme a regra anterior; a interface chama essa data de posição financeira. Não substitui essa posição pelo relógio do computador.
+Endereços antigos redirecionam com `history.replaceState`: `fechamento`, `lancamentos`, `contas` e `conciliacao` vão para as abas de Tesouraria; `indicadores` para Resultados; `dados` e `categorias` para Configurações; `pessoas` para `receber/clientes`; `relatorios` para Visão geral.
+
+A barra de contexto, no topo de todas as páginas, junta a origem dos dados (com link para `#configuracoes/dados`) e "Posição de dd/mm/aaaa · sem atualização em tempo real". Quando há fontes importadas e de exemplo ao mesmo tempo, os indicadores cujos cálculos dependem dos dois tipos recebem a marca "Fontes mistas"; as fontes de cada cálculo saem de `CALCULOS[id].inputs`, resolvidas recursivamente.
+
+`#receber/vencidos`, `#pagar/vencidos` e `#receber/limite` aplicam os filtros dos alertas. A data de referência vem de `contas[0].data_saldo`, conforme a regra anterior; a interface chama essa data de posição financeira. Não substitui essa posição pelo relógio do computador.
 
 ## Componentes e estados
 
 `CaixaUI` expõe `el`, `currency`, `date`, `badge`, `notify`, `dialog`, `dataTable` e `downloadCSV`. Os componentes não leem arquivos nem armazenamento financeiro.
 
-`dataTable` recebe linhas calculadas, definições de colunas e filtros. Inclui pesquisa, ordenação com `aria-sort`, 15 registros por página, contagem acessível, limpar filtros, datas, validação de intervalo, estado vazio e CSV de **todos os registros filtrados**, incluindo os que estão fora da página visível. O CSV usa separador `;`, UTF-8 com BOM e neutraliza fórmulas em textos exportados.
+`dataTable` recebe linhas calculadas, definições de colunas e filtros. Também aceita `advanced` (filtros recolhidos em "Mais filtros"), `options` com predicado por filtro, `default`, `order` (ordenação inicial), `searchKeys`, `emptyText`, `onOpen` com colunas `action` que abrem detalhes e `className` por coluna (`csv-only` some da tela e continua no CSV). Inclui pesquisa, ordenação com `aria-sort`, 15 registros por página, contagem acessível, limpar filtros, datas, validação de intervalo, estado vazio e CSV de **todos os registros filtrados**, incluindo os que estão fora da página visível. O CSV usa separador `;`, UTF-8 com BOM e neutraliza fórmulas em textos exportados.
 
 Diálogos usam `<dialog>` nativo, foco modal e Escape. Ações de importação e restauração têm confirmação explícita antes da alteração local. Cancelar mantém a fonte atual. O sucesso da importação significa que a fonte local foi aplicada; se a persistência falhar, a mensagem informa que os dados não sobreviverão ao fechamento da página.
 
@@ -132,9 +130,9 @@ As telas dependem de `get(id)`, que resolve as fontes e os cálculos registrados
 
 ## Responsividade e acessibilidade
 
-Desktop: sidebar de 224px, corpo fluido e limite de conteúdo de 1320px. Em até 1360px os indicadores passam para duas colunas; até 1100px os painéis se empilham. Em até 900px a navegação vira menu modal com bloqueio do fundo, controle de foco e Escape. A navegação libera o foco ao mudar de página ou redimensionar para desktop. As linhas dos ramos acompanham a preferência de tamanho do texto, mantendo 44px/48px na configuração padrão.
+Desktop: sidebar de 224px, corpo fluido e limite de conteúdo de 1320px. Em até 1360px os indicadores passam para duas colunas; até 1100px os painéis se empilham. Em até 900px a navegação vira menu modal com bloqueio do fundo, controle de foco e Escape. A navegação libera o foco ao mudar de página ou redimensionar para desktop. Abaixo de 900px as abas internas rolam na horizontal dentro da própria faixa.
 
-Em até 540px, indicadores ficam em uma coluna para preservar os valores monetários completos sem reduzir a tipografia. Tabelas extensas têm rolagem dentro do contêiner, sem alargar a página. Controles de tabela são identificados, botões de ordenação são navegáveis por teclado e as abas de gráfico aceitam setas.
+Em até 540px, indicadores ficam em uma coluna para preservar os valores monetários completos sem reduzir a tipografia. Tabelas extensas têm rolagem dentro do contêiner, sem alargar a página. Controles de tabela são identificados, botões de ordenação são navegáveis por teclado e blocos recolhidos usam `<details>` nativo.
 
 ## Skills e decisões técnicas
 
@@ -142,7 +140,7 @@ A skill **Sites** foi consultada, seguindo o caminho de edição local de checko
 
 As skills locais atualmente instaladas e suas versões estão registradas em [docs/skills/README.md](skills/README.md). A revisão tipográfica aplicou Frontend Design e Impeccable/typeset, com avaliações independentes e detector mecânico. O arquivo `charts.js`, já presente, mantém a atribuição MIT à taste-skill.
 
-A integração do BranchedMenu acrescenta React somente à navegação, sem migrar telas, cálculos ou roteador. Playwright é dependência de desenvolvimento; testes financeiros usam o runner nativo do Node. A skill Sites foi utilizada no fluxo local, sem operações de hospedagem.
+React fica restrito ao menu e ao seletor de período, sem migrar telas, cálculos ou roteador. Playwright é dependência de desenvolvimento; testes financeiros usam o runner nativo do Node. A skill Sites foi utilizada no fluxo local, sem operações de hospedagem.
 
 ## Validação
 
@@ -158,11 +156,11 @@ npm run test:browser
 
 `check` verifica sintaxe JavaScript e compila o JSX do menu em memória; não substitui lint semântico. Não há ESLint nem TypeScript no projeto, portanto lint/typecheck específicos não são apresentados como executados. `npm install` gera o menu pelo script `prepare`; `npm run dev` também o compila antes de servir. `npm run build` recompila o menu e gera o HTML único.
 
-Testes financeiros cobrem todas as consultas com exemplos, vínculo do saldo à fonte, resultado mensal em centavos, exclusão de transferências do resultado, abatimentos, situação/data, não mutação e fontes vazias. Testes de navegador cobrem 14 rotas em 1440/768/390/320px, menus, gráficos, pesquisa, paginação, ordenação, detalhes, CSV, OFX, importação e persistência, confirmações, temas, fontes vazias, falhas de carga/armazenamento e HTML único.
+Testes financeiros cobrem todas as consultas com exemplos, vínculo do saldo à fonte, resultado mensal em centavos, exclusão de transferências do resultado, abatimentos, situação/data, não mutação e fontes vazias. Testes de navegador cobrem 14 rotas com abas em 1440/768/390/320px, as rotas antigas, menu plano e móvel, indicadores, alertas, fontes mistas, gráficos, pesquisa, paginação, ordenação, detalhes, CSV, OFX, importação e persistência, confirmações, temas, fontes vazias, falhas de carga/armazenamento e HTML único.
 
 O build gera `dist/caixa-novo.html`; `dist/`, capturas em `test-results/` e `node_modules/` são ignorados pelo Git. Não houve push, merge ou deploy.
 
-Resultado após a integração BranchedMenu: 8 testes financeiros e 12 grupos de integração aprovados; 56 combinações de rota/largura verificadas sem rolagem horizontal da página, 14 destinos acessados por clique no desktop e 42 combinações de rota/largura acessadas pelo menu móvel. As cinco seções foram abertas/fechadas por mouse e teclado; estado ativo, badge, histórico, subrota, persistência, sincronização desktop/celular, foco modal e rodapé visível em viewport baixo foram verificados. O HTML único foi gerado e executado no navegador, incluindo links e expansão do BranchedMenu, sem buscar fontes JSON externas. A revisão visual incluiu capturas de desktop, celular e tema escuro.
+Resultado após a reformulação simplificada (26/11/2026): 17 testes financeiros (incluindo `titulos_resumo`, `fornecedores_resumo` e `resultados_mensais`) e 15 grupos de integração aprovados, com o HTML único executado no navegador. Nesta máquina o teste de navegador rodou com `PW_CHANNEL=msedge`. Capturas de desktop, celular e tema escuro em `test-results/`. `tests/visual.cjs` compara com uma linha de base anterior à reformulação e serve só para gerar capturas.
 
 ## Pendências reais
 

@@ -184,7 +184,7 @@
     $('#g-alert-count').textContent = lista.length ? `${int(lista.length)} ${lista.length === 1 ? 'ponto de atenção' : 'pontos de atenção'}` : '';
     const more = $('#g-alerts-more');
     more.hidden = lista.length <= 3;
-    more.textContent = alertasTodos ? 'Mostrar menos' : `Ver mais ${int(lista.length - 3)}`;
+    more.textContent = alertasTodos ? 'Mostrar menos' : `Ver mais ${int(lista.length - 3)} ${lista.length - 3 === 1 ? 'alerta' : 'alertas'}`;
     more.setAttribute('aria-expanded', String(alertasTodos));
   }
 

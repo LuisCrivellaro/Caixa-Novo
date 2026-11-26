@@ -12,27 +12,29 @@ Reformular produto, navegação e interface para o dono da distribuidora decidir
 
 ## Etapas
 
+Todas as etapas planejadas estão concluídas (sessão de 26/11/2026, checkpoints `c91f4f0`, `ac33808` e o commit de documentação seguinte).
+
 | # | Etapa | Estado |
 | --- | --- | --- |
 | 1 | Analisar arquitetura, rotas, dados e testes | concluída |
-| 2 | Menu lateral plano com 6 páginas | em andamento (ver "Estado do checkpoint") |
-| 3 | Visão geral e Fluxo de caixa | pendente |
-| 4 | Contas a receber e Contas a pagar | pendente |
-| 5 | Tesouraria (abas Contas, Movimentações, Fechamento, Conciliação) | pendente |
-| 6 | Resultados e Configurações (abas Dados, Categorias, Aparência) | pendente |
-| 7 | Limpeza visual e remoção de código morto | pendente |
-| 8 | Atualizar testes (`tests/browser.cjs`, `tests/flow-browser.cjs`, `tests/calculos.test.cjs`), rodar `npm run check`, `npm test`, `npm run test:browser`, `npm run build` | pendente |
-| 9 | Validar telas claro/escuro (capturas por `tests/visual.cjs after`, que compara com uma linha de base antiga e falha no fim de propósito) | pendente |
-| 10 | Atualizar README, `docs/FRONTEND_ARCHITECTURE.md` e `CLAUDE.md` | pendente |
+| 2 | Menu lateral plano com 6 páginas | concluída |
+| 3 | Visão geral e Fluxo de caixa | concluída |
+| 4 | Contas a receber e Contas a pagar | concluída |
+| 5 | Tesouraria (abas Contas, Movimentações, Fechamento, Conciliação) | concluída |
+| 6 | Resultados e Configurações (abas Dados, Categorias, Aparência) | concluída |
+| 7 | Limpeza visual e remoção de código morto | concluída |
+| 8 | Testes: `npm run check`, `npm test` (17), `npm run test:browser` (15 grupos, com HTML único), `npm run build` | concluída |
+| 9 | Validar telas claro/escuro (capturas de `test:browser` em `test-results/`) | concluída |
+| 10 | Atualizar README, `docs/FRONTEND_ARCHITECTURE.md` e `CLAUDE.md` | concluída |
 
 ## Mapa do código atual (para não reanalisar)
 
-- `index.html`: telas estáticas `#geral`, `#fluxo`, `#receber`, `#pagar`, `#fechamento`, `#lancamentos`, `#indicadores`, `#conciliacao`, `#dados`. Sidebar com `[data-branched-menu]`, rodapé com Configurações e botões `[data-theme-set]`.
-- `assets/js/workspace.js`: cria em tempo de execução `#contas`, `#pessoas`, `#categorias`, `#relatorios`, `#configuracoes`; `mountTitles` injeta a tabela de títulos em receber/pagar; `renderFlowTable` injeta `#f-details` no fluxo.
-- `assets/js/app.js`: carga das fontes, `get(id)` com cache, formatação, render de cada tela, importação (`FONTES_DEF`, `painelMapeamento`), conciliação, roteador (`VIEWS`, `NOMES`, `route()`), tema (`aplicarTema`), menu mobile.
-- `assets/js/ui.js`: `CaixaUI.dataTable` (pesquisa, filtros select, datas, ordenação, 15 por página, CSV de todos os filtrados), `dialog`, `badge`, `downloadCSV`, `notify`.
-- `assets/components/navigation.jsx`: monta BranchedMenu (seções expansíveis com ramos SVG) em `.side` e `#sheet`; ponte `window.CaixaMenu.setActive/setReceivableCount`.
-- `assets/js/calculos.js`: consultas declarativas. Úteis: `resumo` (saldo_disponivel, receber_aberto, pagar_aberto, vencidos_valor/qtd, receber_7_dias, pagar_7_dias, pagar_30_dias, prazos, clientes_acima_limite, ultimo_fechamento_diferenca, saldo_minimo), `projecao`, `projecao_marcos`, `fluxo`, `fluxo_resumo`, `fluxo_comparacao`, `titulos_consulta`, `contas_consulta`, `movimentos_consulta`, `pessoas_consulta`, `categorias_consulta`, `devedores`, `pagadores`, `indicadores`, `despesas_categoria`, `fechamento_dias`, `fechamento_itens`.
+- `index.html`: telas `#geral`, `#fluxo`, `#receber`, `#pagar`, `#tesouraria`, `#resultados`, `#configuracoes`. Abas são `nav.subnav a[data-sub]` e painéis `[data-panel]`. Menu montado em `[data-menu]` (sidebar e `#sheet`); tema `[data-theme-set]` só em `#s-aparencia`; barra `#data-banner` com `#data-origin` e `#workspace-date`.
+- `assets/js/workspace.js`: `criarWorkspace({ get, posicao, origem, irPara })` com `renderTitulos(tipo)`, `renderClientes`, `renderFornecedores`, `renderContas`, `renderMovimentos`, `renderCategorias`, `renderFlowTable`, `filtrarConta`, `filtrarTitulos`, `filtrarClientes`, `reiniciar`.
+- `assets/js/app.js`: carga, `get(id)` com cache, `kpi`/`kpiM` (marca "Fontes mistas" via `fontesDe`), `renderGeral`, `renderFluxo`, `renderReceber`, `renderPagar`, `renderTesouraria`, `renderResultados`, `renderConfig`, importação, conciliação, roteador (`VIEWS`, `NOMES`, `SUBS`, `ALIAS`, `route()`), tema e menu móvel.
+- `assets/js/ui.js`: `CaixaUI.dataTable` com `advanced`, `options`, `default`, `order`, `searchKeys`, `emptyText`, `onOpen`, colunas `action` e `className` (`csv-only`).
+- `assets/js/calculos.js`: além dos anteriores, `titulos_resumo`, `fornecedores_resumo` e `resultados_mensais` (com testes).
+- `tests/browser.cjs`: aceita `PW_CHANNEL` (ex.: `msedge`) quando o Chromium do Playwright não está instalado; nesta máquina só há o Edge.
 - Dados de exemplo: lançamentos de 30/07 a 28/10/2026; receber emitido desde 29/05; posição 28/10/2026.
 
 ## Decisões de desenho (aplicar sem reabrir)
@@ -54,45 +56,11 @@ Reformular produto, navegação e interface para o dono da distribuidora decidir
 
 ## Problemas conhecidos
 
-- `tests/visual.cjs` compara com `test-results/visual-before` (não versionado) e falha depois de qualquer mudança de conteúdo; serve só para gerar capturas.
+- `tests/visual.cjs` compara com `test-results/visual-before` (não versionado, anterior à reformulação) e falha depois de qualquer mudança de conteúdo; serve só para gerar capturas.
 - A porta 5173 desta máquina é usada por outro projeto; `.claude/launch.json` serve na 5180.
-
-## Atualização do último checkpoint (interrompido em 92% da janela de 5 horas)
-
-Os itens 1 a 8 e 10 de "Falta em app.js" **foram aplicados** (trechos trocados por `telas.js`/`rotas.js` na sessão anterior). `assets/components/BranchedMenu/` foi apagado e `npm run check` passa. **Ainda não verificado no navegador**: abrir o app, conferir erros no console e corrigir. Falta também o item 11 (foco do menu mobile) e tudo de "Depois disso" (CSS das classes novas, testes, build e documentação).
-
-## Estado do checkpoint anterior (83% da janela de 5 horas)
-
-**O app está quebrado nesta branch até `app.js` ser adaptado.** Já feito:
-
-- `assets/components/navigation.jsx`: menu plano com 6 links (`.nav a[data-view]`, Hugeicons, badge `.nav-count` em receber), montado em `[data-menu]`; ponte `CaixaMenu.setActive/setReceivableCount` mantida. Falta apagar `assets/components/BranchedMenu/` (não é mais importado).
-- `index.html` reescrito com as telas `geral`, `fluxo`, `receber`, `pagar`, `tesouraria`, `resultados` e `configuracoes`. Abas internas são links `nav.subnav a[data-sub]` com hash `#<tela>/<aba>`; os painéis são `[data-panel="<aba>"]` (mostrar um, `hidden` nos outros). Os botões de tema `[data-theme-set]` ficam só em Configurações > Aparência. A barra `#data-banner` tem `#data-origin`, o link para `#configuracoes/dados` e `#workspace-date`.
-- `assets/js/ui.js`: `dataTable` aceita `advanced` (filtros em `<details>` "Mais filtros"), `options` com `test` por filtro, `default`, `order` (ordenação inicial), `searchKeys`, `emptyText`, `onOpen` e colunas `action` (abre detalhe) e `className` (aplicada em `th` e `td`; `csv-only` precisa de CSS `display:none`).
-- `assets/js/calculos.js`: novos `titulos_resumo`, `fornecedores_resumo` e `resultados_mensais`; `titulos_consulta` ganhou parcela, pedido, cliente_id, vendedor, rota e adquirente. Ainda sem testes.
-- `assets/js/workspace.js` reescrito: `criarWorkspace({ get, posicao, origem, irPara })` devolve `renderTitulos(tipo)`, `renderClientes()`, `renderFornecedores()`, `renderContas(abrirConta)`, `renderMovimentos()`, `renderCategorias()`, `renderFlowTable(rows, grao)`, `filtrarConta(conta)`, `filtrarTitulos(tipo, filters)`, `filtrarClientes(filters)` e `reiniciar()`. `irPara(hash)` deve fazer `location.hash = hash`.
-
-### Falta em `assets/js/app.js` (próximo passo)
-
-1. `renderGeral`: `#g-strip` com 4 KPIs (`resumo.saldo_disponivel`, `receber_aberto` com +, `pagar_aberto` com −, `projecao_marcos` 30). Gráfico `Charts.line` em `#g-chart` (o mesmo código do antigo `drawGeralChart`, aba saldo) e `#g-chart-meta` com "Próximos 90 dias · mínimo R$ …". Alertas por gravidade em `#g-alerts` (3 visíveis; `#g-alerts-more` mostra o resto; `#g-alert-count` com o total). Pagamentos vencidos vêm de `titulos_resumo`. Remover `ktabs`, `#g-finding`, `#g-secondary`, `vencimentos_7d`, `#g-stamp` e `drawGeralChart` com abas.
-2. `renderFluxo`: `#f-strip` com 3 KPIs de `fluxo_resumo` (sub: "vs. <período> anterior: x%"); `#f-finding` em uma frase ("Semana atual, 26/10 a 28/10, parcial até a posição; comparação com a semana anterior completa."); `#f-chart-note` curto ("Previsto, mais claro, vem dos títulos em aberto."). Seg `[data-f-tab]` alterna `[data-f-panel]`. Mantém `#f-cat`, `#f-cat-current/previous/period` e `workspace.renderFlowTable`.
-3. `renderReceber`: `#r-strip` com Em aberto, Vencido (com quantidade) e A vencer em 7 dias, de `titulos_resumo`; `workspace.renderTitulos('A receber')` e `renderClientes()`. Apagar `rState`, `drawClientes`, `drawCartao`, `NOTA_PILL` e os listeners `#r-*`.
-4. `renderPagar`: igual, com `renderFornecedores()`. Apagar o calendário, `drawPagarAbertos`, `pAll` e `#p-more`.
-5. `renderTesouraria`: `workspace.renderContas(conta => { workspace.filtrarConta(conta); irPara('tesouraria/movimentacoes') })`, `renderMovimentos()`, fechamento (`#c-lista` com Dia, Esperado, Contado e Diferença; clique no dia abre `CaixaUI.dialog` com os itens de `fechamento_itens`; `#c-finding` "x de y bateram no centavo"; `#c-empty`) e `renderConc()`. Apagar a tela de lançamentos (`lState`, `renderLanc`, `drawLanc`, listeners `#l-*`) e `drawFechDia`/`#c-dia`.
-6. `renderResultados`: `#i-strip` com Faturamento 30 dias, Margem bruta estimada (sub "Estimativa: compras, não custo das vendas"), Despesas operacionais 30 dias (soma de `despesas_categoria`, com −) e Inadimplência; `Charts.diverging` em `#i-chart` com `resultados_mensais` (up faturamento, down despesas, `partial` no mês parcial, legenda em `#i-legend`); `barList` em `#i-desp`; `#i-extra` (kv) com ticket médio, faturamento por cliente, ciclo financeiro, capital de giro, comissões em 30 dias e prazos médios de `resumo`.
-7. `renderConfig`: `renderDados()` atual (renomear destino `#d-*`), `#d-sobre` (kv: origem, posição, "Os dados não são atualizados em tempo real", "Cadastros, baixas e estornos dependem de um sistema com gravação") e `workspace.renderCategorias()`.
-8. Roteador: `VIEWS = { geral, fluxo, receber, pagar, tesouraria, resultados, configuracoes }`; `NOMES` com os títulos novos; `ALIAS` das rotas antigas (decisão 12); subaba padrão (receber → titulos, pagar → titulos, tesouraria → contas, configuracoes → dados); mostrar `[data-panel]` e marcar `aria-current` em `.subnav a`; `#receber/vencidos` aplica `filtrarTitulos('A receber', { situacao: 'Vencido' })`; `#receber/limite` aplica `filtrarClientes({ situacao_cliente: 'limite' })` e abre a aba clientes. Re-renderizar a tela a cada rota (as tabelas preservam estado).
-9. Marca "Fontes mistas": função `fontesDe(id)` sobre `CALCULOS[id].inputs` e um `kpi(..., { calc: ['resumo'] })` que acrescenta `.pill pill-warn` "Fontes mistas" quando houver fonte importada e de exemplo entre as dependências.
-10. `recarregar()`: limpar cache, `workspace.reiniciar()` e redesenhar. `aplicarTema` e o ouvinte de `prefers-color-scheme` redesenham só a tela atual.
-11. Menu mobile: os seletores de foco continuam valendo (`#sheet`); remover a referência a `[data-theme-set]` do teste de foco.
-
-### Depois disso
-
-CSS (`.nav` sem grupos e com ícones de 18px, `.subnav`, `.accounts`, `.disclosure`, `.more-filters-wrap`, `.csv-only{display:none}`, `.kpis`, `.detail-sub`), apagar CSS morto (`.notas`, `.cal*`, `.ktab*`, `.split`, `.list`, `.dashboard-*`, `.account-*`, `.workspace-bar`, `.company`, `.caixa-menu`), regenerar o bundle (`npm run build:menu`), reescrever os testes de navegador para as novas rotas e testar os cálculos novos. Por fim, as etapas 8 a 10.
+- O Playwright não tem o Chromium baixado nesta máquina; rode `PW_CHANNEL=msedge npm run test:browser` ou instale com `npx playwright install chromium`.
+- `#receber/vencidos` e `#receber/limite` reaplicam o filtro sempre que a rota é redesenhada com esse endereço aberto (por exemplo quando o tema do sistema muda); pode desfazer um filtro que a pessoa trocou depois de seguir o atalho.
 
 ## Próxima ação exata
 
-1. `npm run build:menu`, servir com `npx --yes serve@14 -l 5180 .` e abrir cada rota (`#geral`, `#fluxo`, `#receber`, `#receber/clientes`, `#pagar`, `#pagar/fornecedores`, `#tesouraria/contas|movimentacoes|fechamento|conciliacao`, `#resultados`, `#configuracoes/dados|categorias|aparencia`), corrigindo exceções.
-2. Escrever o CSS listado em "Depois disso" e apagar o CSS morto.
-3. Reescrever `tests/browser.cjs` e `tests/flow-browser.cjs` para as novas rotas; testar `titulos_resumo`, `fornecedores_resumo` e `resultados_mensais` em `tests/calculos.test.cjs`.
-4. Rodar `npm run check`, `npm test`, `npm run test:browser` e `npm run build`; validar os temas claro e escuro.
-5. Atualizar README, `docs/FRONTEND_ARCHITECTURE.md` e `CLAUDE.md` (o menu deixou de ser BranchedMenu). Fazer commit e push nesta branch.
+Nenhuma etapa pendente. A branch está pronta para revisão do dono. Não fazer merge na main sem autorização. Se houver pedido de ajuste, aplicar nesta branch, rodar `npm run check`, `npm test`, `PW_CHANNEL=msedge npm run test:browser` e `npm run build`, e fazer commit e push aqui.
