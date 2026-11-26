@@ -94,11 +94,6 @@
             <div class="card-head"><h2>Alertas</h2><span class="meta">O que pede atenção hoje</span></div>
             <ul class="alerts" id="g-alerts"></ul>
           </article>
-          <article class="card" id="g-prazos">
-            <div class="card-head"><h2>Prazos médios</h2><span class="meta">Títulos dos últimos 90 dias</span></div>
-            <dl class="kv" id="g-prazos-kv"></dl>
-            <p class="card-note">Diferença positiva quer dizer que o dinheiro dos clientes entra depois que os produtores já foram pagos.</p>
-          </article>
         </div>
       </div>
       <article class="card" id="g-venc">
@@ -148,15 +143,17 @@
           <div id="r-aging"></div>
         </article>
         <article class="card">
-          <div class="card-head"><h2>Em aberto por forma de pagamento</h2></div>
-          <div id="r-forma"></div>
+          <div class="card-head"><h2>Cartão a receber</h2><span class="meta">Repasses por adquirente e data, já sem a taxa</span></div>
+          <div class="tbl-wrap short">
+            <table aria-label="Cartão a receber">
+              <thead><tr><th>Liquidação</th><th>Adquirente</th><th class="num">Vendas</th><th class="num">Valor</th></tr></thead>
+              <tbody id="r-cartao"></tbody>
+            </table>
+          </div>
+          <p class="empty" id="r-cartao-empty" hidden>Nenhum repasse de cartão pendente.</p>
+          <div class="more card-foot"><button type="button" class="btn btn-ghost" id="r-cartao-more" hidden>Mostrar todos</button></div>
         </article>
       </div>
-      <article class="card" id="r-notas">
-        <div class="card-head"><h2>Nota de pagador</h2><span class="meta">Títulos vencidos nos últimos 180 dias, sem cartão</span></div>
-        <div class="notas" id="r-notas-grid"></div>
-        <p class="card-note">Paga em dia: 90% ou mais dos títulos pagos até 2 dias depois do vencimento e nenhum atraso acima de 15 dias. Costuma atrasar: menos de 75% em dia com atraso médio de 5 dias ou mais, ou algum atraso acima de 60 dias. Sem histórico: menos de 3 títulos no período.</p>
-      </article>
       <article class="card" id="r-clientes">
         <div class="card-head"><h2>Clientes com saldo em aberto</h2><span class="meta" id="r-cli-meta"></span></div>
         <div class="filters">
@@ -173,24 +170,6 @@
         <p class="empty" id="r-cli-empty" hidden>Nenhum cliente com estes filtros. Limpe a busca para ver todos.</p>
         <div class="more card-foot"><button type="button" class="btn btn-ghost" id="r-cli-more" hidden>Mostrar todos</button></div>
       </article>
-      <article class="card">
-        <div class="card-head"><h2>Recebido no mês</h2><span class="meta">Vendas à vista, boletos, cheques e repasses de cartão</span></div>
-        <div class="split">
-          <section aria-labelledby="r-vend-h"><h3 id="r-vend-h">Por vendedor</h3><div id="r-vend"></div></section>
-          <section aria-labelledby="r-rota-h"><h3 id="r-rota-h">Por rota de entrega</h3><div id="r-rota"></div></section>
-        </div>
-      </article>
-      <article class="card">
-        <div class="card-head"><h2>Cartão a receber</h2><span class="meta">Repasses por adquirente e data, já sem a taxa</span></div>
-        <div class="tbl-wrap short">
-          <table aria-label="Cartão a receber">
-            <thead><tr><th>Liquidação</th><th>Adquirente</th><th class="num">Vendas</th><th class="num">Valor</th></tr></thead>
-            <tbody id="r-cartao"></tbody>
-          </table>
-        </div>
-        <p class="empty" id="r-cartao-empty" hidden>Nenhum repasse de cartão pendente.</p>
-        <div class="more card-foot"><button type="button" class="btn btn-ghost" id="r-cartao-more" hidden>Mostrar todos</button></div>
-      </article>
     </section>
 
     <section class="view" id="pagar" aria-labelledby="h-pagar" hidden>
@@ -201,20 +180,13 @@
         </div>
       </div>
       <div class="strip" style="--n:4" id="p-strip"></div>
-      <div class="cols cols-3-2">
-        <article class="card">
-          <div class="card-head"><h2>Calendário de pagamentos</h2><span class="meta">Quanto mais forte o vermelho, maior o valor que sai no dia</span></div>
-          <div class="calendar-scroll" tabindex="0" role="region" aria-label="Calendário de pagamentos; role para ver todos os dias">
-            <div class="cal-head" aria-hidden="true"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
-            <div class="cal" id="p-cal"></div>
-          </div>
-          <p class="card-note scroll-hint">Role para os lados para ver todos os dias.</p>
-        </article>
-        <article class="card">
-          <div class="card-head"><h2>Próximos 30 dias por categoria</h2></div>
-          <div id="p-cat"></div>
-        </article>
-      </div>
+      <article class="card">
+        <div class="card-head"><h2>Calendário de pagamentos</h2><span class="meta">Quanto mais forte o vermelho, maior o valor que sai no dia</span></div>
+        <div class="calendar-scroll" tabindex="0" role="region" aria-label="Calendário de pagamentos; role para ver todos os dias">
+          <div class="cal-head" aria-hidden="true"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
+          <div class="cal" id="p-cal"></div>
+        </div>
+      </article>
       <article class="card">
         <div class="card-head"><h2>Títulos a pagar em aberto</h2><span class="meta" id="p-abertos-meta"></span></div>
         <div class="tbl-wrap">
@@ -224,17 +196,6 @@
           </table>
         </div>
         <div class="more card-foot"><button type="button" class="btn btn-ghost" id="p-more" hidden>Mostrar todos</button></div>
-        <p class="card-note">Baixas de pagamento e lançamentos manuais dependem da integração com um sistema de gravação.</p>
-      </article>
-      <article class="card">
-        <div class="card-head"><h2>Abatimentos de produtores</h2><span class="meta">Títulos dos últimos 90 dias com desconto</span></div>
-        <div class="tbl-wrap short">
-          <table aria-label="Abatimentos de produtores">
-            <thead><tr><th>Vencimento</th><th>Produtor</th><th>Motivo</th><th class="hide-sm">Situação</th><th class="num">Abatimento</th></tr></thead>
-            <tbody id="p-abat"></tbody>
-          </table>
-        </div>
-        <p class="empty" id="p-abat-empty" hidden>Nenhum abatimento nos últimos 90 dias.</p>
       </article>
     </section>
 
@@ -246,11 +207,6 @@
         </div>
         <label class="field"><span>Dia</span><select class="select" id="c-dia"></select></label>
       </div>
-      <article class="card">
-        <div class="card-head"><h2>Diferença de gaveta nos últimos 30 fechamentos</h2><div class="chart-legend" id="c-legend"></div></div>
-        <div class="chart" id="c-chart"></div>
-        <p class="card-note">Diferença entre o valor contado e o esperado. Zero indica que os valores coincidem.</p>
-      </article>
       <div class="cols cols-1-2">
         <article class="card">
           <div class="card-head"><h2 id="c-dia-title">Gaveta do dia</h2><span class="meta" id="c-resp"></span></div>
@@ -260,7 +216,6 @@
               <tbody id="c-itens"></tbody>
             </table>
           </div>
-          <p class="card-note card-foot">Esperado na gaveta é abertura mais suprimentos, dinheiro do balcão e acerto dos motoristas, menos sangrias. Pix, cartão, boleto e cheque não passam pela gaveta.</p>
         </article>
         <article class="card">
           <div class="card-head"><h2>Fechamentos</h2><span class="meta">Do mais recente para o mais antigo</span></div>

@@ -170,13 +170,6 @@
     if (abaixo && abaixo.dia) alerts.push(h('li', {}, icon('warning-circle'), h('span', { text: `Saldo projetado abaixo do mínimo a partir de ${dBR(abaixo.dia)}.` })));
     if (!alerts.length) alerts.push(h('li', { class: 'ok' }, icon('check-circle'), h('span', { text: 'Nenhum alerta agora.' })));
     $('#g-alerts').replaceChildren(...alerts);
-
-    const kv = (dt, dd, cls) => h('div', {}, h('dt', { text: dt }), h('dd', { class: cls || null, text: dd }));
-    const desc = R(res, 'descasamento_prazos');
-    $('#g-prazos-kv').replaceChildren(
-      kv('Prazo concedido aos clientes', dias(R(res, 'prazo_medio_recebimento'))),
-      kv('Prazo obtido dos produtores', dias(R(res, 'prazo_medio_pagamento'))),
-      kv('Diferença', diasS(desc)));
   }
 
   const tingir = (el) => { el.style.setProperty('--chart-1', cv('--positive')); el.style.setProperty('--chart-muted', cv('--negative')); };
@@ -293,28 +286,11 @@
       kpi('Inadimplência', pct(inad), 'Vencido sobre a carteira'),
       kpi('Acima do limite de crédito', int(R(res, 'clientes_acima_limite')), 'Clientes', { cls: R(res, 'clientes_acima_limite') ? '' : 'zero' }));
     safe($('#r-aging'), () => barList($('#r-aging'), aging.map((a) => ({ label: `${a.faixa} (${int(a.qtd)})`, value: a.valor })), { colour: 'color-mix(in srgb, var(--brand) 32%, transparent)', tom: 'pos' }));
-    safe($('#r-forma'), () => barList($('#r-forma'), get('receber_forma').map((f) => ({ label: `${f.forma} (${int(f.qtd)})`, value: f.aberto })), { colour: 'color-mix(in srgb, var(--brand) 32%, transparent)', tom: 'pos' }));
-    const rec = get('recebido_por');
-    safe($('#r-vend'), () => barList($('#r-vend'), rec.filter((r) => r.dimensao === 'vendedor').map((r) => ({ label: r.nome, value: r.valor })), { thin: true, all: true, colour: 'var(--positive)', tom: 'pos' }));
-    safe($('#r-rota'), () => barList($('#r-rota'), rec.filter((r) => r.dimensao === 'rota').map((r) => ({ label: r.nome, value: r.valor })), { thin: true, all: true, colour: 'var(--positive)', tom: 'pos' }));
-    safe($('#r-notas-grid'), () => {
-      const pag = get('pagadores'), dev = get('devedores');
-      const aberto = {}; dev.forEach((d) => { aberto[d.cliente_id] = Math.round(d.vencido * 100) + Math.round(d.a_vencer * 100); });
-      $('#r-notas-grid').replaceChildren(...Object.keys(NOTA_PILL).map((nota) => {
-        const cl = pag.filter((p) => p.nota === nota);
-        const valor = cl.reduce((t, p) => t + (aberto[p.cliente_id] || 0), 0) / 100;
-        return h('button', { type: 'button', class: 'nota', 'aria-pressed': String(rState.nota === nota), onclick: () => { rState.nota = rState.nota === nota ? '' : nota; $('#r-nota').value = rState.nota; renderNotasSel(); drawClientes(); } },
-          h('span', { class: 'pill ' + NOTA_PILL[nota], text: nota }),
-          h('span', { class: 'kpi-value', text: `${int(cl.length)} ${cl.length === 1 ? 'cliente' : 'clientes'}` }),
-          h('span', { class: 'kpi-sub' }, h('span', { class: sinal(valor) || null, text: brl(valor) }), ' em aberto'));
-      }));
-    });
     $('#r-nota').value = rState.nota;
     $('#r-only').checked = rState.only;
     drawClientes();
     drawCartao();
   }
-  const renderNotasSel = () => $$('#r-notas-grid .nota').forEach((b) => b.setAttribute('aria-pressed', String($('.pill', b).textContent === rState.nota)));
   function drawClientes() {
     const tb = $('#r-cli');
     safe(tb, () => {
@@ -379,13 +355,7 @@
         return b;
       }));
     });
-    safe($('#p-cat'), () => barList($('#p-cat'), get('pagar_categoria').map((c) => ({ label: c.categoria, value: c.valor })), { thin: true, all: true, colour: 'var(--negative)', format: (v) => brlS(-v), tom: 'neg' }));
     drawPagarAbertos();
-    const ab = get('abatimentos');
-    safe($('#p-abat'), () => {
-      $('#p-abat').replaceChildren(...ab.map((a) => h('tr', {}, h('td', { text: dBR(a.vencimento) }), h('td', { class: 'id' }, h('b', { text: a.fornecedor }), h('span', { class: 'sub', text: a.documento })), h('td', { text: a.motivo }), h('td', { class: 'hide-sm' }, h('span', { class: 'pill ' + (a.situacao === 'Pago' ? 'pill-neutral' : 'pill-warn'), text: a.situacao })), h('td', { class: 'num ' + sinal(a.abatimento), text: brlS(a.abatimento) }))));
-      $('#p-abat-empty').hidden = ab.length > 0;
-    });
   }
   function drawPagarAbertos() {
     const tb = $('#p-abertos');
@@ -408,7 +378,7 @@
   let cDia = null;
   function renderFechamento() {
     const dd = get('fechamento_dias');
-    if (!dd.length) { $('#c-finding').textContent = 'Ainda não há fechamentos nos dados.'; $('#c-dia').replaceChildren(); $('#c-itens').replaceChildren(); $('#c-lista').replaceChildren(); $('#c-chart').replaceChildren(); return; }
+    if (!dd.length) { $('#c-finding').textContent = 'Ainda não há fechamentos nos dados.'; $('#c-dia').replaceChildren(); $('#c-itens').replaceChildren(); $('#c-lista').replaceChildren(); return; }
     if (!cDia || !dd.some((d) => d.data === cDia)) cDia = dd[dd.length - 1].data;
     const ult = dd[dd.length - 1];
     const certos = dd.filter((d) => Math.abs(d.diferenca) < 0.01).length;
@@ -420,11 +390,6 @@
     sel.replaceChildren(...dd.slice().reverse().map((d) => h('option', { value: d.data, text: dBR(d.data) + (Math.abs(d.diferenca) >= 0.01 ? ', com diferença' : '') })));
     sel.value = cDia;
     drawFechDia();
-    tingir($('#c-chart'));
-    safe($('#c-chart'), () => {
-      const out = Charts.diverging($('#c-chart'), { labels: dd.map((d) => dCurta(d.data)), values: dd.map((d) => d.diferenca), above: 'Sobra', below: 'Falta', format: brl, height: 220 });
-      $('#c-legend').replaceChildren(); if (out && out.legend) $('#c-legend').append(out.legend);
-    });
     safe($('#c-lista'), () => {
       $('#c-lista').replaceChildren(...dd.slice().reverse().map((d) => h('tr', { style: d.data === cDia ? 'background:var(--raised)' : null },
         h('td', {}, h('button', { type: 'button', class: 'btn btn-text', style: 'padding:0;height:auto', text: dBR(d.data), onclick: () => { cDia = d.data; renderFechamento(); } })),
@@ -1031,7 +996,7 @@
   $('.ktabs').addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { chartTab = chartTab === 'saldo' ? 'fluxo' : 'saldo'; drawGeralChart(); $('#kt-' + chartTab).focus(); } });
   let tq;
   $('#r-q').addEventListener('input', (e) => { clearTimeout(tq); tq = setTimeout(() => { rState.q = e.target.value; drawClientes(); }, 150); });
-  $('#r-nota').addEventListener('change', (e) => { rState.nota = e.target.value; renderNotasSel(); drawClientes(); });
+  $('#r-nota').addEventListener('change', (e) => { rState.nota = e.target.value; drawClientes(); });
   $('#r-only').addEventListener('change', (e) => { rState.only = e.target.checked; rState.limite = false; drawClientes(); });
   $$('#r-clientes .sort').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.sort; rState.dir = rState.sort === k ? -rState.dir : -1; rState.sort = k; drawClientes(); }));
   $('#r-cli-more').addEventListener('click', () => { rState.all = true; drawClientes(); });
