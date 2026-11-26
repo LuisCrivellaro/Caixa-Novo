@@ -57,7 +57,11 @@ Reformular produto, navegação e interface para o dono da distribuidora decidir
 - `tests/visual.cjs` compara com `test-results/visual-before` (não versionado) e falha depois de qualquer mudança de conteúdo; serve só para gerar capturas.
 - A porta 5173 desta máquina é usada por outro projeto; `.claude/launch.json` serve na 5180.
 
-## Estado do checkpoint (26/11/2026, interrompido em 83% da janela de 5 horas)
+## Atualização do último checkpoint (interrompido em 92% da janela de 5 horas)
+
+Os itens 1 a 8 e 10 de "Falta em app.js" **foram aplicados** (trechos trocados por `telas.js`/`rotas.js` na sessão anterior). `assets/components/BranchedMenu/` foi apagado e `npm run check` passa. **Ainda não verificado no navegador**: abrir o app, conferir erros no console e corrigir. Falta também o item 11 (foco do menu mobile) e tudo de "Depois disso" (CSS das classes novas, testes, build e documentação).
+
+## Estado do checkpoint anterior (83% da janela de 5 horas)
 
 **O app está quebrado nesta branch até `app.js` ser adaptado.** Já feito:
 
@@ -87,4 +91,8 @@ CSS (`.nav` sem grupos e com ícones de 18px, `.subnav`, `.accounts`, `.disclosu
 
 ## Próxima ação exata
 
-Abrir `assets/js/app.js` e executar a lista "Falta em app.js" acima, na ordem. Depois rodar `npm run check`, abrir o app (`npx --yes serve@14 -l 5180 .`) e seguir as etapas 7 a 10. Fazer commit e push nesta branch ao fim de cada etapa.
+1. `npm run build:menu`, servir com `npx --yes serve@14 -l 5180 .` e abrir cada rota (`#geral`, `#fluxo`, `#receber`, `#receber/clientes`, `#pagar`, `#pagar/fornecedores`, `#tesouraria/contas|movimentacoes|fechamento|conciliacao`, `#resultados`, `#configuracoes/dados|categorias|aparencia`), corrigindo exceções.
+2. Escrever o CSS listado em "Depois disso" e apagar o CSS morto.
+3. Reescrever `tests/browser.cjs` e `tests/flow-browser.cjs` para as novas rotas; testar `titulos_resumo`, `fornecedores_resumo` e `resultados_mensais` em `tests/calculos.test.cjs`.
+4. Rodar `npm run check`, `npm test`, `npm run test:browser` e `npm run build`; validar os temas claro e escuro.
+5. Atualizar README, `docs/FRONTEND_ARCHITECTURE.md` e `CLAUDE.md` (o menu deixou de ser BranchedMenu). Fazer commit e push nesta branch.
