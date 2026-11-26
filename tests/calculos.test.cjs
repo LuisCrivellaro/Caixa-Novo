@@ -9,6 +9,7 @@ vm.runInNewContext(readFileSync(join(root, 'assets/js/calculos.js'), 'utf8'), co
 const calcs = context.window.CALCULOS;
 const sources = Object.fromEntries(['contas', 'clientes', 'pagar', 'receber', 'lancamentos', 'fechamentos'].map(n => [n, JSON.parse(readFileSync(join(root, 'dados', n + '.json'), 'utf8'))]));
 const get = (id, data = sources) => id in data ? data[id] : calcs[id].fn(...calcs[id].inputs.map(n => get(n, data)));
+const plain = value => JSON.parse(JSON.stringify(value));
 const fixture = () => ({ contas: [{ conta: 'Caixa', saldo_centavos: 12345, data_saldo: '2026-10-31', tipo: 'Caixa físico' }], clientes: [{ id: 'C1', nome: 'Cliente', limite_centavos: 100000 }], pagar: [], receber: [], lancamentos: [], fechamentos: [] });
 
 test('todas as consultas financeiras aceitam as fontes de exemplo sem NaN', () => {
@@ -161,4 +162,65 @@ test('variação do resultado preserva direção quando o período anterior é n
   assert.equal(mes.resultado_anterior_centavos, -100);
   assert.equal(mes.resultado_centavos, 100);
   assert.equal(mes.variacao_resultado, 2);
+});
+test('titulos_resumo confere com os totais do resumo, em centavos', () => {
+  const resumo = Object.fromEntries(get('resumo').map(r => [r.metrica, r.valor]));
+  const [rec, pag] = get('titulos_resumo');
+  assert.equal(rec.tipo, 'A receber'); assert.equal(pag.tipo, 'A pagar');
+  assert.equal(rec.aberto_centavos, Math.round(resumo.receber_aberto * 100));
+  assert.equal(pag.aberto_centavos, Math.round(resumo.pagar_aberto * 100));
+  assert.equal(rec.vencido_centavos, Math.round(resumo.vencidos_valor * 100));
+  assert.equal(rec.vencido_qtd, resumo.vencidos_qtd);
+  assert.equal(rec.proximos_7_centavos, Math.round(resumo.receber_7_dias * 100));
+  assert.equal(pag.proximos_7_centavos, Math.round(resumo.pagar_7_dias * 100));
+  for (const row of [rec, pag]) for (const key of Object.keys(row)) if (key.endsWith('_centavos')) assert.ok(Number.isInteger(row[key]), key);
+});
+test('titulos_resumo separa vencido, a vencer em 7 dias e pagos pela posição da fonte', () => {
+  const data = fixture();
+  data.receber = [
+    { id: 'R1', cliente_id: 'C1', vencimento: '2026-10-30', valor_centavos: 101, pago_em: null },
+    { id: 'R2', cliente_id: 'C1', vencimento: '2026-10-31', valor_centavos: 202, pago_em: null },
+    { id: 'R3', cliente_id: 'C1', vencimento: '2026-11-07', valor_centavos: 303, pago_em: null },
+    { id: 'R4', cliente_id: 'C1', vencimento: '2026-11-08', valor_centavos: 404, pago_em: null },
+    { id: 'R5', cliente_id: 'C1', vencimento: '2026-10-01', valor_centavos: 9999, pago_em: '2026-10-01' },
+  ];
+  data.pagar = [{ id: 'P1', fornecedor: 'F', vencimento: '2026-10-29', valor_centavos: 1000, abatimento_centavos: 1, pago_em: null }];
+  const [rec, pag] = get('titulos_resumo', data);
+  assert.deepEqual(plain(rec), { tipo: 'A receber', aberto_centavos: 1010, vencido_centavos: 101, vencido_qtd: 1, proximos_7_centavos: 505, abertos_qtd: 4 });
+  assert.deepEqual(plain(pag), { tipo: 'A pagar', aberto_centavos: 999, vencido_centavos: 999, vencido_qtd: 1, proximos_7_centavos: 0, abertos_qtd: 1 });
+});
+test('fornecedores_resumo agrupa por fornecedor e ordena vencidos primeiro', () => {
+  const data = fixture();
+  data.pagar = [
+    { id: 'P1', fornecedor: 'Banco', vencimento: '2026-11-10', valor_centavos: 5000, pago_em: null, categoria: 'Tarifas' },
+    { id: 'P2', fornecedor: 'Banco', vencimento: '2026-11-05', valor_centavos: 700, abatimento_centavos: 100, pago_em: null, categoria: 'Juros' },
+    { id: 'P3', fornecedor: 'Sítio', vencimento: '2026-10-20', valor_centavos: 300, pago_em: null, categoria: 'Compra de frutas' },
+    { id: 'P4', fornecedor: 'Sítio', vencimento: '2026-10-10', valor_centavos: 800, pago_em: '2026-10-10', categoria: 'Compra de frutas' },
+  ];
+  const rows = plain(get('fornecedores_resumo', data));
+  assert.deepEqual(rows.map(r => r.fornecedor), ['Sítio', 'Banco']);
+  assert.deepEqual(rows[0], { fornecedor: 'Sítio', aberto_centavos: 300, vencido_centavos: 300, abertos_qtd: 1, titulos_qtd: 2, proximo_vencimento: null, categorias: 'Compra de frutas' });
+  assert.deepEqual(rows[1], { fornecedor: 'Banco', aberto_centavos: 5600, vencido_centavos: 0, abertos_qtd: 2, titulos_qtd: 2, proximo_vencimento: '2026-11-05', categorias: 'Juros, Tarifas' });
+});
+test('resultados_mensais usa só meses inteiros, marca o mês parcial e exclui compra de frutas', () => {
+  const data = fixture();
+  data.lancamentos = [
+    { data: '2026-08-15', tipo: 'saida', categoria: 'Aluguel', valor_centavos: 777 },
+    { data: '2026-09-02', tipo: 'entrada', categoria: 'Venda à vista', valor_centavos: 150 },
+    { data: '2026-09-03', tipo: 'saida', categoria: 'Aluguel', valor_centavos: 40 },
+    { data: '2026-09-04', tipo: 'saida', categoria: 'Compra de frutas', valor_centavos: 9000 },
+    { data: '2026-09-05', tipo: 'transferencia', categoria: 'Transferência', valor_centavos: 5000 },
+    { data: '2026-10-10', tipo: 'saida', categoria: 'Frete e combustível', valor_centavos: 25 },
+    { data: '2026-11-02', tipo: 'saida', categoria: 'Aluguel', valor_centavos: 999 },
+  ];
+  data.receber = [
+    { id: 'R1', cliente_id: 'C1', emissao: '2026-09-10', vencimento: '2026-10-10', valor_centavos: 1000, pago_em: null },
+    { id: 'R2', cliente_id: 'C1', emissao: '2026-08-20', vencimento: '2026-09-20', valor_centavos: 5000, pago_em: null },
+    { id: 'R3', cliente_id: 'C1', emissao: '2026-10-31', vencimento: '2026-11-30', valor_centavos: 3, pago_em: null },
+  ];
+  assert.deepEqual(plain(get('resultados_mensais', data)), [
+    { mes: '2026-09-01', faturamento_centavos: 1150, despesas_centavos: 40, parcial: false },
+    { mes: '2026-10-01', faturamento_centavos: 3, despesas_centavos: 25, parcial: true },
+  ]);
+  assert.deepEqual(plain(get('resultados_mensais', fixture())), []);
 });
