@@ -191,10 +191,10 @@
   // ------- FLUXO -------
   let grao = 'semana';
   const periodos = {
-    dia: { nome: 'Dia', anterior: 'dia anterior', por: 'dia' },
-    semana: { nome: 'Semana', anterior: 'semana anterior', por: 'semana' },
-    mes: { nome: 'Mês', anterior: 'mês anterior', por: 'mês' },
-    ano: { nome: 'Ano', anterior: 'ano anterior', por: 'ano' }
+    dia: { nome: 'Dia', anterior: 'dia anterior', completo: 'o dia anterior completo', por: 'dia' },
+    semana: { nome: 'Semana', anterior: 'semana anterior', completo: 'a semana anterior completa', por: 'semana' },
+    mes: { nome: 'Mês', anterior: 'mês anterior', completo: 'o mês anterior completo', por: 'mês' },
+    ano: { nome: 'Ano', anterior: 'ano anterior', completo: 'o ano anterior completo', por: 'ano' }
   };
   const flowPeriod = window.CaixaFlowPeriod.mount($('#f-period'), { value: grao, onChange: value => {
     if (!periodos[value] || value === grao) return;
@@ -207,7 +207,7 @@
     const res = get('fluxo_resumo').find(row => row.grao === grao);
     const intervalo = res.inicio === res.ate ? dBR(res.ate) : `${dBR(res.inicio)} a ${dBR(res.ate)}`;
     $('#fluxo').dataset.periodo = grao;
-    $('#f-finding').textContent = `${periodo.nome} atual: ${intervalo}${res.ate < res.fim ? ' (parcial, até a posição)' : ''}. Comparação com ${periodo.anterior} completo.`;
+    $('#f-finding').textContent = `${periodo.nome} atual: ${intervalo}${res.ate < res.fim ? ' (parcial, até a posição)' : ''}. Comparação com ${periodo.completo}.`;
     const vs = (v) => `vs. ${periodo.anterior}: ${pctS(v)}`;
     $('#f-strip').replaceChildren(
       kpiM('Entradas', brlS(res.entradas_centavos / 100), vs(res.variacao_entradas), { cls: sinal(res.entradas_centavos), calc: ['fluxo_resumo'] }),
