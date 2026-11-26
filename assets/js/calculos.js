@@ -15,10 +15,66 @@ dash.calc('titulos_consulta', {
       emissao: r.emissao, vencimento: r.vencimento, pago_em: r.pago_em,
       valor_centavos: Number(r.valor_centavos), abatimento_centavos: Number(r.abatimento_centavos || 0),
       liquido_centavos: Number(r.valor_centavos) - Number(r.abatimento_centavos || 0),
-      motivo: r.motivo_abatimento || '', forma: r.forma || '',
+      motivo: r.motivo_abatimento || '', forma: r.forma || '', parcela: r.parcela || '', pedido: r.pedido || '',
+      cliente_id: r.cliente_id || '', vendedor: r.vendedor || '', rota: r.rota || '', adquirente: r.adquirente || '',
       situacao: r.pago_em ? (tipo === 'A receber' ? 'Recebido' : 'Pago') : r.vencimento < hoje ? 'Vencido' : r.vencimento === hoje ? 'Vence hoje' : 'A vencer',
     });
     return [...receber.map(r => converter(r, 'A receber')), ...pagar.map(r => converter(r, 'A pagar'))];
+  },
+});
+dash.calc('titulos_resumo', {
+  title: 'Totais de títulos por tipo', inputs: ['contas', 'titulos_consulta'],
+  fn: (contas, titulos) => {
+    const hoje = contas[0].data_saldo;
+    const ate7 = new Date(Date.parse(hoje) + 7 * 864e5).toISOString().slice(0, 10);
+    return ['A receber', 'A pagar'].map(tipo => {
+      const abertos = titulos.filter(t => t.tipo === tipo && !t.pago_em);
+      const soma = rs => rs.reduce((s, t) => s + t.liquido_centavos, 0);
+      const vencidos = abertos.filter(t => t.vencimento < hoje);
+      return { tipo, aberto_centavos: soma(abertos), vencido_centavos: soma(vencidos), vencido_qtd: vencidos.length,
+        proximos_7_centavos: soma(abertos.filter(t => t.vencimento >= hoje && t.vencimento <= ate7)), abertos_qtd: abertos.length };
+    });
+  },
+});
+dash.calc('fornecedores_resumo', {
+  title: 'Fornecedores com títulos', inputs: ['contas', 'titulos_consulta'],
+  fn: (contas, titulos) => {
+    const hoje = contas[0].data_saldo;
+    const por = new Map();
+    for (const t of titulos.filter(t => t.tipo === 'A pagar')) {
+      if (!por.has(t.contraparte)) por.set(t.contraparte, { fornecedor: t.contraparte, aberto_centavos: 0, vencido_centavos: 0, abertos_qtd: 0, titulos_qtd: 0, proximo_vencimento: null, categorias: new Set() });
+      const f = por.get(t.contraparte);
+      f.titulos_qtd++; f.categorias.add(t.categoria);
+      if (t.pago_em) continue;
+      f.abertos_qtd++; f.aberto_centavos += t.liquido_centavos;
+      if (t.vencimento < hoje) f.vencido_centavos += t.liquido_centavos;
+      else if (!f.proximo_vencimento || t.vencimento < f.proximo_vencimento) f.proximo_vencimento = t.vencimento;
+    }
+    return [...por.values()].map(f => ({ ...f, categorias: [...f.categorias].sort().join(', ') }))
+      .sort((a, b) => b.vencido_centavos - a.vencido_centavos || b.aberto_centavos - a.aberto_centavos || a.fornecedor.localeCompare(b.fornecedor, 'pt-BR'));
+  },
+});
+// Faturamento segue a regra de `indicadores` (títulos a receber emitidos + vendas à vista); despesas operacionais
+// seguem `despesas_categoria` (saídas realizadas sem a compra de frutas). Só entram meses inteiros cobertos pelos
+// lançamentos; o mês da posição vem marcado como parcial.
+dash.calc('resultados_mensais', {
+  title: 'Faturamento e despesas operacionais por mês', inputs: ['contas', 'lancamentos', 'receber'],
+  fn: (contas, lancamentos, receber) => {
+    const hoje = contas[0].data_saldo;
+    const datas = lancamentos.map(l => l.data).filter(d => d && d <= hoje).sort();
+    if (!datas.length) return [];
+    let mes = datas[0].slice(8, 10) === '01' ? datas[0].slice(0, 7) : new Date(Date.UTC(+datas[0].slice(0, 4), +datas[0].slice(5, 7), 1)).toISOString().slice(0, 7);
+    const linhas = [];
+    while (mes <= hoje.slice(0, 7)) {
+      const noMes = d => d && d.slice(0, 7) === mes && d <= hoje;
+      const fat = receber.filter(r => noMes(r.emissao)).reduce((s, r) => s + Number(r.valor_centavos), 0)
+        + lancamentos.filter(l => l.categoria === 'Venda à vista' && noMes(l.data)).reduce((s, l) => s + Number(l.valor_centavos), 0);
+      const desp = lancamentos.filter(l => l.tipo === 'saida' && l.categoria !== 'Compra de frutas' && noMes(l.data)).reduce((s, l) => s + Number(l.valor_centavos), 0);
+      linhas.push({ mes: mes + '-01', faturamento_centavos: fat, despesas_centavos: desp, parcial: mes === hoje.slice(0, 7) });
+      const [a, m] = mes.split('-').map(Number);
+      mes = new Date(Date.UTC(a, m, 1)).toISOString().slice(0, 7);
+    }
+    return linhas;
   },
 });
 dash.calc('contas_consulta', {
