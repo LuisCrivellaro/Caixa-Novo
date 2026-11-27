@@ -1,6 +1,6 @@
 # Contexto para o Claude Code
 
-Caixa Novo: painel interno de caixa da Mundo Novo (distribuidora de frutas, Rondonópolis). Telas e cálculos em HTML, CSS e JavaScript; React restrito ao BranchedMenu e ao RubberSegment do Fluxo de Caixa. Execute `npm install` para gerar o bundle local e rode com `npm run dev` ou Live Server. Após editar essas ilhas React com o servidor aberto, execute `npm run build:menu`. `npm run build` gera o HTML único.
+Caixa Novo: painel interno de caixa da Mundo Novo (distribuidora de frutas, Rondonópolis). Telas e cálculos em HTML, CSS e JavaScript; React restrito ao menu lateral (`assets/components/navigation.jsx`, lista plana de seis páginas) e ao RubberSegment do Fluxo de Caixa. Abas internas usam rotas `#<tela>/<aba>`. Execute `npm install` para gerar o bundle local e rode com `npm run dev` ou Live Server. Após editar essas ilhas React com o servidor aberto, execute `npm run build:menu`. `npm run build` gera o HTML único.
 
 ## Sempre seguir
 
@@ -10,11 +10,12 @@ Caixa Novo: painel interno de caixa da Mundo Novo (distribuidora de frutas, Rond
 - Um cálculo novo entra em `calculos.js` com `inputs` e `fn`, e devolve linhas simples.
 - Interface toda em português do Brasil: `R$ 1.234,56`, datas `dd/mm/aaaa`, sinal de menos verdadeiro (−).
 - Valor que sai leva `−`, valor que entra leva `+`; cor nunca é o único sinal.
-- Cor da marca nos dados, na faixa de destaque e nos ramos/indicador ativos do BranchedMenu; demais itens do menu e caixas em tons neutros.
+- Cor da marca nos dados, na faixa de destaque e no indicador do item ativo do menu e da aba ativa; demais itens do menu e caixas em tons neutros.
+- Poucos indicadores por página e detalhes sob demanda (abas, blocos recolhidos, "Mais filtros", diálogo de detalhes). Não repetir a mesma informação em dois lugares da mesma página.
 - Toda lista e tabela precisa de estado vazio; todo controle precisa de foco visível.
 - Número positivo em verde, negativo em vermelho, zero sem cor (classes `pos` e `neg`). Exceção: valor vencido fica vermelho.
 - Importação nunca aplica sem a conferência de colunas; dados importados vivem no localStorage com a chave `mn-fonte-<fonte>`.
-- Movimento curto (150 a 200 ms, ease-out) e só em resposta a uma ação; respeitar prefers-reduced-motion.
+- Movimento com ease-out: interações de 150 a 250 ms; entradas de página, gráficos e listas em cascata de até cerca de 1 s, só ao abrir a tela (redesenho por tamanho fica estático). Nunca animar valores financeiros (sem contagem progressiva). Tudo some com prefers-reduced-motion; as regras ficam no bloco "Movimento" do fim de `styles.css`.
 
 ## Skills locais de frontend
 

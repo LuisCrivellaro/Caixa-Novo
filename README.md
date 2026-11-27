@@ -4,21 +4,25 @@ Painel interno de caixa da Mundo Novo, distribuidora de frutas em Rondonópolis.
 
 > Este repositório é público e traz só dados de exemplo, inventados. Os dados reais importados pela tela Importar dados ficam no navegador de quem importou e nunca entram no repositório. Não faça commit de planilhas ou extratos reais.
 
-Telas: visão geral, fluxo de caixa, a receber, a pagar, fechamento da gaveta, lançamentos, indicadores, contas financeiras, clientes e fornecedores, categorias, relatórios, conciliação, importação e configurações. Funciona no computador, tablet e celular, com tema claro e escuro.
+Seis páginas no menu: Visão geral, Fluxo de caixa, Contas a receber (abas Títulos e Clientes), Contas a pagar (Títulos e Fornecedores), Tesouraria (Contas, Movimentações, Fechamento e Conciliação) e Resultados. Configurações fica no rodapé do menu, com as abas Dados, Categorias e Aparência. Cada página mostra poucos indicadores; os detalhes abrem sob demanda. Funciona no computador, tablet e celular, com tema claro e escuro.
 
 Os dados em `dados/` são **de exemplo**, gerados por `scripts/gerar_dados.py`. Nenhum número é real ainda.
 
 ## Ferramentas
 
 - **Resumo do dia** (Visão geral): monta um texto curto com saldo, movimento do dia, vencimentos da semana, vencidos e diferença de gaveta. Dá para copiar ou abrir direto no WhatsApp.
-- **Nota de pagador** (A receber): classifica cada cliente pelos títulos que venceram nos últimos 180 dias, sem cartão. Paga em dia: 90% ou mais pagos até 2 dias depois do vencimento e nenhum atraso acima de 15 dias. Costuma atrasar: menos de 75% em dia com atraso médio de 5 dias ou mais, ou algum atraso acima de 60 dias. Sem histórico: menos de 3 títulos. Os critérios ficam no cálculo `pagadores`, em `calculos.js`.
-- **Conciliação bancária**: importa o extrato (OFX, CSV ou Excel) de uma conta e confere cada linha com os lançamentos. Bate quando o valor é igual ao centavo e a data fica a até 3 dias de diferença. Mostra o que bateu, o que só está no extrato e o que só está no sistema. Há um extrato de exemplo para testar.
-- **Importar dados**: troca os dados de exemplo pelos reais, uma fonte por vez, a partir de Excel ou CSV. O painel sugere qual coluna do arquivo vai em cada campo, mostra um exemplo lido e quantas linhas não deram para ler, e só aplica depois da conferência. Os dados importados ficam guardados no navegador (localStorage) e cada fonte pode voltar ao exemplo.
-- **Títulos e detalhes**: consulte títulos recebidos/pagos e em aberto, com pesquisa, situação, datas, abatimentos e movimentos vinculados quando a fonte tiver essa relação.
-- **Relatórios**: movimentações, títulos e fluxo de caixa com filtros, ordenação, paginação e exportação CSV de todos os registros filtrados. O arquivo identifica a origem de exemplo/importada dos dados.
-- **Contas financeiras**: saldos informados pelas fontes, com acesso aos movimentos de cada conta. O extrato não reconstrói nem modifica os saldos.
+- **Alertas** (Visão geral): saldo abaixo do mínimo, pagamentos e recebimentos vencidos, pagamentos dos próximos 7 dias, diferença de gaveta e clientes acima do limite, nessa ordem de gravidade. Mostra três; o resto fica em "Ver mais".
+- **Nota de pagador** (Contas a receber > Clientes): classifica cada cliente pelos títulos que venceram nos últimos 180 dias, sem cartão. Paga em dia: 90% ou mais pagos até 2 dias depois do vencimento e nenhum atraso acima de 15 dias. Costuma atrasar: menos de 75% em dia com atraso médio de 5 dias ou mais, ou algum atraso acima de 60 dias. Sem histórico: menos de 3 títulos. Os critérios ficam no cálculo `pagadores`, em `calculos.js`.
+- **Conciliação bancária** (Tesouraria): importa o extrato (OFX, CSV ou Excel) de uma conta e confere cada linha com os lançamentos. Bate quando o valor é igual ao centavo e a data fica a até 3 dias de diferença. Mostra o que bateu, o que só está no extrato e o que só está no sistema. Há um extrato de exemplo para testar.
+- **Importar dados** (Configurações > Dados): troca os dados de exemplo pelos reais, uma fonte por vez, a partir de Excel ou CSV. O painel sugere qual coluna do arquivo vai em cada campo, mostra um exemplo lido e quantas linhas não deram para ler, e só aplica depois da conferência. Os dados importados ficam guardados no navegador (localStorage) e cada fonte pode voltar ao exemplo.
+- **Títulos e detalhes**: a tabela abre em "Em aberto", com vencidos primeiro, e mostra só contraparte, vencimento, valor e situação. Pesquisa, situação e período ficam à vista; forma, vendedor, rota ou categoria ficam em "Mais filtros". Clicar no nome abre documento, parcela, abatimentos e movimentos vinculados.
+- **Tabelas e CSV**: movimentações, títulos, clientes, fornecedores, categorias e fluxo têm filtros, ordenação, paginação e exportação CSV de todos os registros filtrados, com as colunas extras que não aparecem na tela. O arquivo identifica a origem de exemplo/importada dos dados.
+- **Contas** (Tesouraria): saldos informados pelas fontes, com atalho para as movimentações de cada conta. O extrato não reconstrói nem modifica os saldos.
+- **Resultados**: faturamento, margem bruta estimada (usa compras, não o custo das vendas), despesas operacionais e inadimplência; gráfico mensal de faturamento e despesas; indicadores complementares recolhidos.
 
-O aviso de origem aparece em todas as telas: exemplos, fontes mistas ou dados totalmente importados. Importar uma fonte substitui seus registros após confirmação; não faz inclusão incremental. Voltar ao exemplo também exige confirmação.
+A barra no topo mostra a origem dos dados (exemplos, fontes mistas ou importados) e a data da posição. Indicadores que juntam fontes importadas e de exemplo levam a marca "Fontes mistas". Importar uma fonte substitui seus registros após confirmação; não faz inclusão incremental. Voltar ao exemplo também exige confirmação.
+
+Endereços antigos continuam funcionando: `#lancamentos`, `#fechamento`, `#contas`, `#conciliacao`, `#indicadores`, `#dados`, `#categorias`, `#pessoas` e `#relatorios` levam à página nova correspondente.
 
 O projeto não tem backend. Cadastro/edição, baixas de pagamentos/recebimentos, transferências, estornos e pagamentos parciais ainda dependem de uma API com persistência e histórico; essas operações não são simuladas pela interface.
 
@@ -30,7 +34,7 @@ O site lê os arquivos de `dados/` com `fetch`, então precisa de um servidor lo
 
 Escolha um dos caminhos:
 
-Execute `npm install` na primeira vez: ele instala as dependências e compila as duas ilhas React locais, BranchedMenu e RubberSegment. As telas e as rotas continuam em JavaScript. Depois, escolha um dos servidores abaixo.
+Execute `npm install` na primeira vez: ele instala as dependências e compila as duas ilhas React locais: o menu lateral e o RubberSegment do Fluxo de caixa. As telas e as rotas continuam em JavaScript. Depois, escolha um dos servidores abaixo.
 
 - **Live Server:** instale a extensão recomendada (o VS Code oferece ao abrir a pasta), clique com o botão direito em `index.html` e escolha "Open with Live Server".
 - **Terminal, com Node instalado:** `npm run dev` e abra http://localhost:5173.
@@ -44,10 +48,10 @@ assets/css/styles.css      cores, fontes, caixas e versão de celular
 assets/js/calculos.js      todos os cálculos do caixa
 assets/js/app.js           carga dos dados, rotas, telas e filtros
 assets/js/ui.js            tabelas, diálogos, status, mensagens e exportações
-assets/js/workspace.js     consultas de gestão, títulos e relatórios
+assets/js/workspace.js     tabelas de títulos, clientes, fornecedores, contas, movimentações e categorias
 assets/js/charts.js        gráficos em SVG (da taste-skill, licença MIT)
-assets/components/BranchedMenu/  BranchedMenu.jsx e BranchedMenu.css, base React Bits
-assets/components/navigation.jsx  categorias e integração com o roteador existente
+assets/components/navigation.jsx  menu plano com seis páginas, Hugeicons e ponte com o roteador
+assets/components/RubberSegment/  seletor de período do Fluxo de caixa, base React Bits
 assets/generated/          JS/CSS compilados do menu (gerados, ignorados pelo Git)
 assets/img/                logo
 dados/*.json               dados de exemplo
@@ -82,13 +86,11 @@ Datas no formato `AAAA-MM-DD`. `pago_em` vazio (`null`) quer dizer em aberto.
 
 - Fundo bege `#F5F3EE`, cards brancos, bordas discretas e sidebar compacta. Laranja do logo `#FE7D01`, destaque `#B85605` no tema claro e `#FF9A3D` no escuro, verde positivo `#35713D` e vermelho negativo `#BE473F`.
 - Fontes: Red Hat Display nos títulos e números grandes, Red Hat Text no resto e Birthstone exclusivamente na frase institucional do rodapé.
-- Gráficos existentes da taste-skill preservados. Navegação BranchedMenu com ramos curvos e marcador ativo laranja; cores e tipografia acompanham o tema. Números alinhados à direita, algarismos de largura fixa e sombras suaves.
+- Gráficos existentes da taste-skill preservados. Menu plano com ícones Hugeicons e marcador ativo laranja; cores e tipografia acompanham o tema. Números alinhados à direita, algarismos de largura fixa e sombras suaves.
 
-O menu usa a [implementação JavaScript/CSS do BranchedMenu, do React Bits](https://reactbits.dev/c/micro/branched-menu), com Hugeicons nas cinco categorias e nos 14 destinos existentes. Mantém o roteamento por hash, inclusive subrotas e voltar/avançar, e o badge de títulos vencidos. As seções abertas são compartilhadas entre desktop e celular e salvas em `mn-menu-secoes`; a navegação funciona em memória se o armazenamento estiver indisponível. Ao acessar uma página de outra seção recolhida, essa seção abre para mostrar o item ativo.
+O menu lista as seis páginas sem grupos nem rolagem, com o badge de recebimentos vencidos em Contas a receber. Abas internas usam endereços próprios (`#tesouraria/fechamento`, `#receber/clientes`), então voltar/avançar e links diretos funcionam. A sidebar tem 224px, logo, frase institucional e o atalho de Configurações; o tema Sistema/Claro/Escuro fica em Configurações > Aparência. O RubberSegment do Fluxo de caixa vem do React Bits; a licença está em [docs/licenses/react-bits.md](docs/licenses/react-bits.md).
 
-A sidebar continua com 224px, logo, empresa, frase institucional, atalho de Configurações e temas Auto/Claro/Escuro. A área de navegação tem rolagem própria. A referência e sua licença estão em [docs/licenses/react-bits.md](docs/licenses/react-bits.md).
-
-`npm run dev` recompila o menu ao iniciar. Após editar os arquivos JSX/CSS do componente com o servidor já aberto, execute `npm run build:menu` e atualize o navegador. Os recursos compilados incluem React e os ícones usados; não dependem de CDN para funcionar.
+`npm run dev` recompila o menu ao iniciar. Após editar os arquivos JSX/CSS das ilhas React com o servidor já aberto, execute `npm run build:menu` e atualize o navegador. Os recursos compilados incluem React e os ícones usados; não dependem de CDN para funcionar.
 
 ## Verificar e gerar a entrega
 
@@ -101,11 +103,11 @@ npm run build
 
 O build gera `dist/caixa-novo.html`, com scripts, estilos, logo e dados de exemplo embutidos. Não publica o projeto.
 
-Para os testes de integração: instale o Chromium com `npx playwright install chromium` caso ele não esteja disponível e execute `npm run test:browser`. O teste abre e fecha seu próprio servidor local, verifica as telas em desktop/tablet/celular e gera capturas em `test-results/`.
+Para os testes de integração: instale o Chromium com `npx playwright install chromium` caso ele não esteja disponível e execute `npm run test:browser`. Para usar um navegador já instalado, defina `PW_CHANNEL` (por exemplo `msedge` ou `chrome`). O teste abre e fecha seu próprio servidor local, verifica as telas em desktop/tablet/celular e gera capturas em `test-results/`.
 
 Não há TypeScript ou configuração de ESLint. `npm run check` verifica sintaxe JavaScript. Consulte [a arquitetura do frontend](docs/FRONTEND_ARCHITECTURE.md) para componentes, decisões e limitações.
 
-A [evolução visual do frontend](docs/FRONTEND_POLISH.md) registra a auditoria, os componentes refinados e a comparação das 14 rotas nos temas claro/escuro em cinco larguras. Para novas alterações visuais, `node tests/visual.cjs before` salva uma referência e `node tests/visual.cjs after` verifica layout, contraste e preservação dos valores exibidos. As capturas ficam em `test-results/`.
+A [evolução visual do frontend](docs/FRONTEND_POLISH.md) registra a auditoria e os componentes refinados antes da reformulação. Para novas alterações visuais, `node tests/visual.cjs before` salva uma referência e `node tests/visual.cjs after` verifica layout, contraste e preservação dos valores exibidos. As capturas ficam em `test-results/`.
 
 A [revisão tipográfica](docs/TYPOGRAPHY.md) documenta a escala centralizada, a legibilidade das tabelas e menus, os ajustes dos rótulos SVG e a validação com fontes externas indisponíveis e texto ampliado. Os testes visuais também verificam os tamanhos efetivos por função e o espaçamento entre datas dos gráficos.
 

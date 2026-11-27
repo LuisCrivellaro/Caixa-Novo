@@ -89,10 +89,12 @@
     return el;
   };
   const forte = (v, txt) => h('strong', { class: sinal(v) || null, text: txt });
-  const kpi = (label, value, sub, opts = {}) => h('div', { class: opts.lead ? 'strip-lead' : null },
+  // opts.href deixa o indicador inteiro clicável, levando ao detalhe correspondente.
+  const kpi = (label, value, sub, opts = {}) => h('div', { class: [opts.lead ? 'strip-lead' : '', opts.href ? 'kpi-link' : ''].join(' ').trim() || null },
     h('span', { class: 'kpi-label', text: label }),
     h('span', { class: 'kpi-value' + (opts.cls ? ' ' + opts.cls : ''), text: value }),
-    sub ? (sub.nodeType ? sub : h('span', { class: 'kpi-sub', text: sub })) : null);
+    sub ? (sub.nodeType ? sub : h('span', { class: 'kpi-sub', text: sub })) : null,
+    opts.href ? h('a', { class: 'kpi-hit', href: opts.href, 'aria-label': `${label}, ${value}: ${opts.hint || 'ver detalhes'}` }, h('span', { class: 'kpi-arrow', 'aria-hidden': 'true', text: '→' })) : null);
   const safe = (box, fn) => {
     try { fn(); } catch (e) {
       console.error(e);
@@ -112,109 +114,89 @@
     if (opts.subs) $$('li', el).forEach((li, i) => { const s = opts.subs[i]; if (s) li.firstChild.title = s; });
   };
 
-  // ------- VISÃO GERAL -------
-  let chartTab = 'saldo';
-  function renderGeral() {
-    const res = get('resumo'), marcos = get('projecao_marcos'), proj = get('projecao');
-    const minimo = R(res, 'saldo_minimo');
-    const abaixo = marcos.find((m) => m.marco === 'minimo');
-    const menor = marcos.find((m) => m.marco === 'menor');
-    const f = $('#g-finding');
-    f.replaceChildren(
-      'Títulos vencidos somam ', h('span', { class: 'band', text: `${brl(R(res, 'vencidos_valor'))} em ${int(R(res, 'vencidos_qtd'))} títulos` }), '. ',
-      abaixo && abaixo.dia
-        ? h('span', {}, 'Com o que já está lançado, o saldo fica abaixo do mínimo de ', forte(minimo, brl(minimo)), ' a partir de ', h('strong', { text: dBR(abaixo.dia) }), '.')
-        : h('span', {}, 'Com o que já está lançado, o saldo não cai abaixo do mínimo de ', forte(minimo, brl(minimo)), ' nos próximos 90 dias; o ponto mais baixo é ', forte(menor.saldo, brl(menor.saldo)), ' em ', h('strong', { text: dBR(menor.dia) }), '.'));
-    $('#g-stamp').textContent = `Posição de ${dBR(HOJE)}`;
-
-    const contas = get('saldo_contas');
-    $('#g-strip').replaceChildren(
-      kpi('Saldo disponível', brl(R(res, 'saldo_disponivel')), `${contas.length} contas · posição de ${dCurta(HOJE)}`, { cls: sinal(R(res, 'saldo_disponivel')) }),
-      kpi('Entradas no mês', brlS(R(res, 'entradas_mes')), 'Realizadas · ' + pctS(R(res, 'variacao_entradas')) + ' vs. período anterior', { cls: sinal(R(res, 'entradas_mes')) }),
-      kpi('Saídas no mês', brlS(-R(res, 'saidas_mes')), 'Realizadas · ' + pctS(R(res, 'variacao_saidas')) + ' vs. período anterior', { cls: sinal(-R(res, 'saidas_mes')) }),
-      kpi('Resultado do mês', CaixaUI.currency(get('resultado_mes')[0].valor_centavos), 'Entradas menos saídas realizadas', { cls: sinal(get('resultado_mes')[0].valor_centavos) }));
-    $('#g-secondary').replaceChildren(
-      kpi('A receber', brlS(R(res, 'receber_aberto')), 'Carteira em aberto', { cls: sinal(R(res, 'receber_aberto')) }),
-      kpi('A pagar', brlS(-R(res, 'pagar_aberto')), 'Valor líquido em aberto', { cls: sinal(-R(res, 'pagar_aberto')) }),
-      kpi('Recebimentos vencidos', brl(R(res, 'vencidos_valor')), int(R(res, 'vencidos_qtd')) + ' títulos em atraso', { cls: R(res, 'vencidos_valor') > 0 ? 'neg' : '' }),
-      kpi('Previsão em 30 dias', brl(marcos.find(m => m.marco === '30').saldo), 'Somente títulos já lançados', { cls: sinal(marcos.find(m => m.marco === '30').saldo) }));
-
-    const p30 = marcos.find((m) => m.marco === '30');
-    $('#kt-saldo-v').textContent = brl(p30.saldo);
-    $('#kt-saldo-v').className = 'kpi-value ' + sinal(p30.saldo);
-    const resMes = get('resultado_mes')[0].valor_centavos / 100;
-    $('#kt-fluxo-v').textContent = brlS(resMes);
-    $('#kt-fluxo-v').className = 'kpi-value ' + sinal(resMes);
-    drawGeralChart();
-
-    const venc = get('vencimentos_7d');
-    const lado = (sentido, listId, totalId, sinal) => {
-      const rows = venc.filter((v) => v.sentido === sentido);
-      const total = rows.reduce((t, v) => t + Math.round(v.valor * 100), 0) / 100;
-      $(totalId).textContent = brlS(sinal * total);
-      $(totalId).className = sinal > 0 ? 'pos' : 'neg';
-      const top = rows.slice().sort((x, y) => y.valor - x.valor).slice(0, 5).sort((x, y) => x.vencimento.localeCompare(y.vencimento) || y.valor - x.valor);
-      $(listId).replaceChildren(...(top.length ? top.map((v) => h('li', {},
-        h('span', { class: 'when', text: quando(v.vencimento) }),
-        h('span', { class: 'who' }, v.contraparte, h('small', { text: v.documento })),
-        h('span', { class: 'amt num ' + (sinal > 0 ? 'pos' : 'neg'), text: brlS(sinal * v.valor) }))) : [h('li', { class: 'empty', text: 'Nada vence nos próximos 7 dias.' })]));
-    };
-    lado('A receber', '#g-rec-list', '#g-rec-total', 1);
-    lado('A pagar', '#g-pag-list', '#g-pag-total', -1);
-
-    const alerts = [];
-    if (R(res, 'vencidos_qtd') > 0) alerts.push(h('li', {}, icon('warning-circle'), h('span', {}, `Títulos vencidos a receber: ${int(R(res, 'vencidos_qtd'))}, somando `, h('span', { class: 'neg', text: brl(R(res, 'vencidos_valor')) }), '. ', h('a', { href: '#receber/vencidos', text: 'Ver clientes' }))));
-    if (R(res, 'clientes_acima_limite') > 0) alerts.push(h('li', {}, icon('warning-circle'), h('span', {}, `Clientes acima do limite de crédito: ${int(R(res, 'clientes_acima_limite'))}. `, h('a', { href: '#receber/limite', text: 'Ver quais' }))));
-    const dif = R(res, 'ultimo_fechamento_diferenca');
-    if (dif != null && Math.abs(dif) >= 0.01) { const d = res.find((x) => x.metrica === 'ultimo_fechamento_diferenca').texto; alerts.push(h('li', {}, icon('warning-circle'), h('span', {}, `A gaveta de ${dBR(d)} fechou com `, h('span', { class: sinal(dif), text: brlS(dif) }), ' de diferença. ', h('a', { href: '#fechamento', text: 'Ver fechamento' })))); }
-    if (abaixo && abaixo.dia) alerts.push(h('li', {}, icon('warning-circle'), h('span', { text: `Saldo projetado abaixo do mínimo a partir de ${dBR(abaixo.dia)}.` })));
-    if (!alerts.length) alerts.push(h('li', { class: 'ok' }, icon('check-circle'), h('span', { text: 'Nenhum alerta agora.' })));
-    $('#g-alerts').replaceChildren(...alerts);
-  }
-
+  // ------- FONTES MISTAS -------
+  // Um indicador é marcado quando depende, direta ou indiretamente, de fontes importadas e de exemplo ao mesmo tempo.
+  const fontesDe = (id, vistos = new Set()) => {
+    if (FONTES.includes(id)) return [id];
+    if (vistos.has(id) || !CALCS[id]) return [];
+    vistos.add(id);
+    return [...new Set(CALCS[id].inputs.flatMap((i) => fontesDe(i, vistos)))];
+  };
+  const misto = (ids) => { const f = [...new Set(ids.flatMap((id) => fontesDe(id)))]; const imp = f.filter((n) => IMPORT_META[n]).length; return imp > 0 && imp < f.length; };
+  const kpiM = (label, value, sub, opts = {}) => {
+    const node = kpi(label, value, sub, opts);
+    if (opts.calc && misto(opts.calc)) node.append(h('span', { class: 'pill pill-warn kpi-flag', title: 'Combina fontes importadas com dados de exemplo.', text: 'Fontes mistas' }));
+    return node;
+  };
+  const ou = (v, f) => (v == null || !isFinite(v) ? '—' : f(v));
+  const TR = (tipo) => get('titulos_resumo').find((t) => t.tipo === tipo);
   const tingir = (el) => { el.style.setProperty('--chart-1', cv('--positive')); el.style.setProperty('--chart-muted', cv('--negative')); };
+
+  // ------- VISÃO GERAL -------
+  let alertasTodos = false;
+  function renderGeral() {
+    const res = get('resumo'), p30 = get('projecao_marcos').find((m) => m.marco === '30');
+    $('#g-strip').replaceChildren(
+      kpiM('Saldo disponível', brl(R(res, 'saldo_disponivel')), `${int(get('saldo_contas').length)} contas`, { cls: sinal(R(res, 'saldo_disponivel')), calc: ['resumo'], href: '#tesouraria/contas', hint: 'ver saldos por conta' }),
+      kpiM('Total a receber', brlS(R(res, 'receber_aberto')), 'Títulos em aberto', { cls: sinal(R(res, 'receber_aberto')), calc: ['resumo'], href: '#receber/abertos', hint: 'ver títulos a receber' }),
+      kpiM('Total a pagar', brlS(-R(res, 'pagar_aberto')), 'Títulos em aberto', { cls: sinal(-R(res, 'pagar_aberto')), calc: ['resumo'], href: '#pagar/abertos', hint: 'ver títulos a pagar' }),
+      kpiM('Saldo projetado em 30 dias', brl(p30.saldo), 'Só com títulos já lançados', { cls: sinal(p30.saldo), calc: ['projecao_marcos'], href: '#fluxo', hint: 'ver fluxo de caixa' }));
+    drawGeralChart();
+    drawAlertas();
+  }
   function drawGeralChart() {
-    const el = $('#g-chart'), note = $('#g-chart-note'), legend = $('#g-chart-legend');
-    legend.replaceChildren();
+    const el = $('#g-chart');
     tingir(el);
-    $$('.ktab').forEach((t) => { const selected = t.id === 'kt-' + chartTab; t.setAttribute('aria-selected', String(selected)); t.tabIndex = selected ? 0 : -1; });
-    el.setAttribute('aria-labelledby', 'kt-' + chartTab);
     safe(el, () => {
-      if (chartTab === 'saldo') {
-        const proj = get('projecao'), minimo = R(get('resumo'), 'saldo_minimo');
-        const maxDia = proj.reduce((a, r, i) => (r.saidas > proj[a].saidas ? i : a), 1);
-        note.textContent = 'Saldo de hoje mais os títulos em aberto, na data de vencimento. Títulos já vencidos e vendas futuras não entram.';
-        Charts.line(el, {
-          labels: proj.map((r) => dCurta(r.dia)),
-          series: [{ name: 'Saldo projetado', values: proj.map((r) => r.saldo), colour: cv('--positive') }],
-          format: brl, tickFormat: fmtC, height: 230, today: 0, todayLabel: 'Hoje', endLabel: true, negColour: cv('--negative'),
-          reference: { value: minimo, label: 'Mínimo ' + brlC(minimo) },
-          annotations: proj[maxDia].saidas > 0 ? [{ at: maxDia, label: `Maior saída: ${brlC(proj[maxDia].saidas)} em ${dCurta(proj[maxDia].dia)}`, short: dCurta(proj[maxDia].dia) }] : [],
-        });
-      } else {
-        const fl = get('fluxo').filter((r) => r.grao === 'semana');
-        const per = [...new Set(fl.map((r) => r.periodo))].sort().slice(-21);
-        const sum = (p, k, nat) => fl.filter((r) => r.periodo === p && (!nat || r.natureza === nat)).reduce((s, r) => s + r[k], 0);
-        const mark = per.map((p, i) => (sum(p, 'entradas', 'realizado') + sum(p, 'saidas', 'realizado') === 0 ? i : -1)).filter((i) => i >= 0);
-        const partial = per.findIndex((p) => p <= HOJE && addDias(p, 6) >= HOJE);
-        note.textContent = 'Por semana: entradas acima da linha, saídas abaixo. Semanas futuras vêm dos títulos em aberto.';
-        const out = Charts.diverging(el, {
-          labels: per.map(dCurta), up: per.map((p) => sum(p, 'entradas')), down: per.map((p) => sum(p, 'saidas')),
-          above: 'Entradas', below: 'Saídas', mark, markLabel: 'Previsto, mais claro', markSide: 'both', markTint: true, partial: partial >= 0 ? partial : null,
-          format: brl, tickFormat: fmtC, height: 230,
-        });
-        if (out && out.legend) legend.append(out.legend);
-      }
+      const proj = get('projecao'), minimo = R(get('resumo'), 'saldo_minimo');
+      const maxDia = proj.reduce((a, r, i) => (r.saidas > proj[a].saidas ? i : a), 1);
+      $('#g-chart-meta').textContent = `Próximos 90 dias · mínimo de ${brlC(minimo)}`;
+      Charts.line(el, {
+        labels: proj.map((r) => dCurta(r.dia)),
+        series: [{ name: 'Saldo projetado', values: proj.map((r) => r.saldo), colour: cv('--positive') }],
+        format: brl, tickFormat: fmtC, height: 240, today: 0, todayLabel: 'Hoje', endLabel: true, negColour: cv('--negative'),
+        reference: { value: minimo, label: 'Mínimo ' + brlC(minimo) },
+        annotations: proj[maxDia].saidas > 0 ? [{ at: maxDia, label: `Maior saída: ${brlC(proj[maxDia].saidas)} em ${dCurta(proj[maxDia].dia)}`, short: dCurta(proj[maxDia].dia) }] : [],
+      });
     });
+  }
+  // Ordem de gravidade: falta de caixa, pagamentos vencidos, recebimentos vencidos, pagamentos próximos, gaveta, limite.
+  function alertas() {
+    const res = get('resumo'), pg = TR('A pagar');
+    const out = [];
+    const abaixo = get('projecao_marcos').find((m) => m.marco === 'minimo');
+    if (abaixo && abaixo.dia) out.push({ nivel: 'neg', texto: [`Saldo projetado abaixo do mínimo de ${brl(R(res, 'saldo_minimo'))} a partir de ${dBR(abaixo.dia)}.`], link: ['#fluxo', 'Ver fluxo'] });
+    if (pg.vencido_qtd > 0) out.push({ nivel: 'neg', texto: [`${int(pg.vencido_qtd)} ${pg.vencido_qtd === 1 ? 'pagamento vencido' : 'pagamentos vencidos'}: `, h('strong', { class: 'neg', text: brlS(-pg.vencido_centavos / 100) }), '.'], link: ['#pagar/vencidos', 'Ver pagamentos'] });
+    const vq = R(res, 'vencidos_qtd');
+    if (vq > 0) out.push({ nivel: 'neg', texto: [`${int(vq)} ${vq === 1 ? 'recebimento vencido' : 'recebimentos vencidos'}: `, h('strong', { class: 'neg', text: brl(R(res, 'vencidos_valor')) }), ` (${pct(R(get('indicadores'), 'inadimplencia', 'indicador'))} da carteira).`], link: ['#receber/vencidos', 'Ver títulos'] });
+    const p7 = R(res, 'pagar_7_dias');
+    if (p7 > 0) out.push({ nivel: 'warn', texto: ['A pagar nos próximos 7 dias: ', h('strong', { class: 'neg', text: brlS(-p7) }), '.'], link: ['#pagar', 'Ver contas a pagar'] });
+    const dif = R(res, 'ultimo_fechamento_diferenca');
+    if (dif != null && Math.abs(dif) >= 0.01) out.push({ nivel: 'warn', texto: [`A gaveta de ${dBR(res.find((x) => x.metrica === 'ultimo_fechamento_diferenca').texto)} fechou com `, h('strong', { class: sinal(dif), text: brlS(dif) }), ' de diferença.'], link: ['#tesouraria/fechamento', 'Ver fechamento'] });
+    const lim = R(res, 'clientes_acima_limite');
+    if (lim > 0) out.push({ nivel: 'warn', texto: [`${int(lim)} ${lim === 1 ? 'cliente acima' : 'clientes acima'} do limite de crédito.`], link: ['#receber/limite', 'Ver clientes'] });
+    return out;
+  }
+  function drawAlertas() {
+    const lista = alertas();
+    const show = alertasTodos ? lista : lista.slice(0, 3);
+    $('#g-alerts').replaceChildren(...(show.length
+      ? show.map((a) => h('li', { class: 'alert-' + a.nivel }, icon('warning-circle'), h('span', {}, ...a.texto, ' ', h('a', { href: a.link[0], text: a.link[1] }))))
+      : [h('li', { class: 'ok' }, icon('check-circle'), h('span', { text: 'Nenhum alerta agora.' }))]));
+    $('#g-alert-count').textContent = lista.length ? `${int(lista.length)} ${lista.length === 1 ? 'ponto de atenção' : 'pontos de atenção'}` : '';
+    const more = $('#g-alerts-more');
+    more.hidden = lista.length <= 3;
+    more.textContent = alertasTodos ? 'Mostrar menos' : `Ver mais ${int(lista.length - 3)} ${lista.length - 3 === 1 ? 'alerta' : 'alertas'}`;
+    more.setAttribute('aria-expanded', String(alertasTodos));
   }
 
   // ------- FLUXO -------
   let grao = 'semana';
   const periodos = {
-    dia: { nome: 'Dia', anterior: 'dia anterior', por: 'dia' },
-    semana: { nome: 'Semana', anterior: 'semana anterior', por: 'semana' },
-    mes: { nome: 'Mês', anterior: 'mês anterior', por: 'mês' },
-    ano: { nome: 'Ano', anterior: 'ano anterior', por: 'ano' }
+    dia: { nome: 'Dia', anterior: 'dia anterior', completo: 'o dia anterior completo', por: 'dia' },
+    semana: { nome: 'Semana', anterior: 'semana anterior', completo: 'a semana anterior completa', por: 'semana' },
+    mes: { nome: 'Mês', anterior: 'mês anterior', completo: 'o mês anterior completo', por: 'mês' },
+    ano: { nome: 'Ano', anterior: 'ano anterior', completo: 'o ano anterior completo', por: 'ano' }
   };
   const flowPeriod = window.CaixaFlowPeriod.mount($('#f-period'), { value: grao, onChange: value => {
     if (!periodos[value] || value === grao) return;
@@ -227,15 +209,17 @@
     const res = get('fluxo_resumo').find(row => row.grao === grao);
     const intervalo = res.inicio === res.ate ? dBR(res.ate) : `${dBR(res.inicio)} a ${dBR(res.ate)}`;
     $('#fluxo').dataset.periodo = grao;
-    $('#f-finding').replaceChildren(`${periodo.nome} atual (${intervalo}): entraram `,
-      forte(res.entradas_centavos, brlS(res.entradas_centavos / 100)), ` (variação ${pctS(res.variacao_entradas)}) e saíram `,
-      forte(-res.saidas_centavos, brlS(-res.saidas_centavos / 100)), ` (variação ${pctS(res.variacao_saidas)}). Resultado: `,
-      h('span', { class: 'band', text: brlS(res.resultado_centavos / 100) }), ` (variação ${pctS(res.variacao_resultado)}). Comparação com ${periodo.anterior} completo; — indica ausência de base.`);
+    $('#f-finding').textContent = `${periodo.nome} atual: ${intervalo}${res.ate < res.fim ? ' (parcial, até a posição)' : ''}. Comparação com ${periodo.completo}.`;
+    const vs = (v) => `vs. ${periodo.anterior}: ${pctS(v)}`;
+    $('#f-strip').replaceChildren(
+      kpiM('Entradas', brlS(res.entradas_centavos / 100), vs(res.variacao_entradas), { cls: sinal(res.entradas_centavos), calc: ['fluxo_resumo'] }),
+      kpiM('Saídas', brlS(-res.saidas_centavos / 100), vs(res.variacao_saidas), { cls: sinal(-res.saidas_centavos), calc: ['fluxo_resumo'] }),
+      kpiM('Resultado de caixa', brlS(res.resultado_centavos / 100), vs(res.variacao_resultado), { cls: sinal(res.resultado_centavos), calc: ['fluxo_resumo'] }));
     $('#f-cat-current').textContent = `${periodo.nome} atual`;
     $('#f-cat-previous').textContent = `${periodo.nome} anterior`;
-    $('#f-cat-period').textContent = `${intervalo} vs. ${dBR(res.anterior_inicio)} a ${dBR(res.anterior_fim)}`;
-    $('#f-chart-title').textContent = `Entradas e saídas por ${periodo.por}, realizado e previsto`;
-    $('#f-chart-note').textContent = `Agrupamento por ${periodo.por}; posição em ${dBR(HOJE)}. O previsto vem dos títulos em aberto a receber e a pagar nos próximos 60 dias. Vendas que ainda vão acontecer não entram. O resumo e as categorias comparam o realizado do período atual até a posição com o período anterior completo.`;
+    $('#f-cat-period').textContent = `${intervalo} comparado com ${dBR(res.anterior_inicio)} a ${dBR(res.anterior_fim)}`;
+    $('#f-chart-title').textContent = `Entradas e saídas por ${periodo.por}`;
+    $('#f-chart-note').textContent = `O previsto, mais claro, vem dos títulos em aberto dos próximos 60 dias.`;
     const fl = get('fluxo').filter(row => row.grao === grao && (grao !== 'dia' || (row.periodo >= addDias(HOJE, -45) && row.periodo <= addDias(HOJE, 30))));
     workspace.renderFlowTable(fl, grao);
     const el = $('#f-chart'), lg = $('#f-legend');
@@ -250,7 +234,7 @@
       const partial = per.findIndex(p => p === res.inicio);
       const out = Charts.diverging(el, {
         labels: per.map(label), up: per.map((p) => sum(p, 'entradas')), down: per.map((p) => sum(p, 'saidas')),
-        above: 'Entradas', below: 'Saídas', mark, markLabel: `Previsto por ${periodo.por}, mais claro`, markSide: 'both', markTint: true, partial: partial >= 0 ? partial : null,
+        above: 'Entradas', below: 'Saídas', mark, markLabel: 'Previsto', markSide: 'both', markTint: true, partial: partial >= 0 ? partial : null,
         format: brl, tickFormat: fmtC, height: 280,
       });
       if (out && out.legend) lg.append(out.legend);
@@ -271,210 +255,93 @@
     });
   }
 
-  // ------- A RECEBER -------
-  const rState = { q: '', only: false, limite: false, nota: '', sort: 'vencido', dir: -1, all: false, cartaoAll: false };
-  const NOTA_PILL = { 'Paga em dia': 'pill-pos', 'Atrasa às vezes': 'pill-warn', 'Costuma atrasar': 'pill-neg', 'Sem histórico': 'pill-neutral' };
-  function renderReceber() {
-    workspace.renderTitles('A receber', 'r-titulos');
-    const res = get('resumo'), ind = get('indicadores'), aging = get('aging');
-    const inad = R(ind, 'inadimplencia', 'indicador');
-    const velho = aging.filter((a) => a.ordem >= 3).reduce((s, a) => s + Math.round(a.valor * 100), 0) / 100;
-    $('#r-finding').replaceChildren('A carteira em aberto soma ', forte(R(res, 'receber_aberto'), brl(R(res, 'receber_aberto'))), '. Estão vencidos ', h('span', { class: 'band', text: brl(R(res, 'vencidos_valor')) }), `, ${pct(inad)} da carteira, e ${brl(velho)} disso tem mais de 30 dias de atraso.`);
-    $('#r-strip').replaceChildren(
-      kpi('Carteira em aberto', brl(R(res, 'receber_aberto')), 'Vencido e a vencer', { cls: sinal(R(res, 'receber_aberto')) }),
-      kpi('Vencido', brl(R(res, 'vencidos_valor')), `${int(R(res, 'vencidos_qtd'))} títulos`, { cls: 'neg' }),
-      kpi('Inadimplência', pct(inad), 'Vencido sobre a carteira'),
-      kpi('Acima do limite de crédito', int(R(res, 'clientes_acima_limite')), 'Clientes', { cls: R(res, 'clientes_acima_limite') ? '' : 'zero' }));
-    safe($('#r-aging'), () => barList($('#r-aging'), aging.map((a) => ({ label: `${a.faixa} (${int(a.qtd)})`, value: a.valor })), { colour: 'color-mix(in srgb, var(--brand) 32%, transparent)', tom: 'pos' }));
-    $('#r-nota').value = rState.nota;
-    $('#r-only').checked = rState.only;
-    drawClientes();
-    drawCartao();
+  // ------- CONTAS A RECEBER E A PAGAR -------
+  function stripTitulos(alvo, tipo) {
+    const t = TR(tipo), s = tipo === 'A receber' ? 1 : -1, calc = ['titulos_resumo'], base = s > 0 ? '#receber/' : '#pagar/';
+    $(alvo).replaceChildren(
+      kpiM('Em aberto', brlS(s * t.aberto_centavos / 100), `${int(t.abertos_qtd)} ${t.abertos_qtd === 1 ? 'título' : 'títulos'}`, { cls: sinal(s * t.aberto_centavos), calc, href: base + 'abertos', hint: 'filtrar títulos em aberto' }),
+      kpiM('Vencido', s > 0 ? brl(t.vencido_centavos / 100) : brlS(-t.vencido_centavos / 100), `${int(t.vencido_qtd)} ${t.vencido_qtd === 1 ? 'título' : 'títulos'}`, { cls: t.vencido_centavos ? 'neg' : '', calc, href: base + 'vencidos', hint: 'filtrar títulos vencidos' }),
+      kpiM('A vencer em 7 dias', brlS(s * t.proximos_7_centavos / 100), 'De hoje até 7 dias', { cls: sinal(s * t.proximos_7_centavos), calc }));
   }
-  function drawClientes() {
-    const tb = $('#r-cli');
-    safe(tb, () => {
-      const q = rState.q.trim().toLocaleLowerCase('pt-BR');
-      const notas = Object.fromEntries(get('pagadores').map((p) => [p.cliente_id, p]));
-      let rows = get('devedores').map((c) => { const p = notas[c.cliente_id]; return { ...c, nota: p ? p.nota : 'Sem histórico', nota_ordem: p ? p.ordem : 3, em_dia: p ? p.em_dia : null }; }).filter((c) => (!rState.only || c.vencido > 0) && (!rState.limite || c.uso_limite > 1) && (!rState.nota || c.nota === rState.nota) && (!q || (c.cliente + ' ' + c.vendedor + ' ' + c.rota).toLocaleLowerCase('pt-BR').includes(q)));
-      rows = rows.slice().sort((a, b) => ((a[rState.sort] ?? -1) - (b[rState.sort] ?? -1)) * rState.dir || b.vencido - a.vencido);
-      $$('#r-clientes th').forEach((th) => { const b = $('.sort', th); if (b && b.dataset.sort === rState.sort) th.setAttribute('aria-sort', rState.dir < 0 ? 'descending' : 'ascending'); else th.removeAttribute('aria-sort'); });
-      const total = get('devedores').length;
-      $('#r-cli-meta').textContent = rows.length === total ? `${int(total)} clientes` : `${int(rows.length)} de ${int(total)} clientes`;
-      const show = rState.all ? rows : rows.slice(0, 12);
-      tb.replaceChildren(...show.map((c) => h('tr', {},
-        h('td', { class: 'id' }, h('b', { text: c.cliente }), h('span', { class: 'sub', text: `${c.vendedor}, ${c.rota}` })),
-        h('td', { class: 'hide-sm' }, h('span', { class: 'pill ' + NOTA_PILL[c.nota], text: c.nota }), c.em_dia != null ? h('span', { class: 'sub', text: `${pct(c.em_dia)} em dia` }) : null),
-        h('td', { class: 'num' + (c.vencido > 0 ? ' neg' : ' dash'), text: c.vencido > 0 ? brl(c.vencido) : '—' }),
-        h('td', { class: 'num hide-sm' + (c.maior_atraso ? '' : ' dash'), text: c.maior_atraso ? dias(c.maior_atraso) : '—' }),
-        h('td', { class: 'num ' + sinal(c.a_vencer), text: brl(c.a_vencer) }),
-        h('td', { class: 'num' }, c.uso_limite > 1 ? h('span', { class: 'pill pill-neg', text: pct(c.uso_limite) }) : h('span', { text: pct(c.uso_limite) }), h('span', { class: 'sub', text: 'de ' + brl(c.limite) })))));
-      $('#r-cli-empty').hidden = rows.length > 0;
-      const more = $('#r-cli-more');
-      more.hidden = rState.all || rows.length <= 12;
-      more.textContent = `Mostrar todos os ${int(rows.length)}`;
-    });
+  function renderReceber(sub) {
+    stripTitulos('#r-strip', 'A receber');
+    if (sub === 'clientes') workspace.renderClientes(); else workspace.renderTitulos('A receber');
   }
-  function drawCartao() {
-    const tb = $('#r-cartao');
-    safe(tb, () => {
-      const rows = get('cartao_liquidacao');
-      const show = rState.cartaoAll ? rows : rows.slice(0, 8);
-      tb.replaceChildren(...show.map((c) => h('tr', {}, h('td', { text: quando(c.liquidacao) }), h('td', { text: c.adquirente }), h('td', { class: 'num', text: int(c.qtd) }), h('td', { class: 'num ' + sinal(c.valor), text: brlS(c.valor) }))));
-      $('#r-cartao-empty').hidden = rows.length > 0;
-      const more = $('#r-cartao-more');
-      more.hidden = rState.cartaoAll || rows.length <= 8;
-      more.textContent = `Mostrar todos os ${int(rows.length)} repasses`;
-    });
+  function renderPagar(sub) {
+    stripTitulos('#p-strip', 'A pagar');
+    if (sub === 'fornecedores') workspace.renderFornecedores(); else workspace.renderTitulos('A pagar');
   }
 
-  // ------- A PAGAR -------
-  let pAll = false;
-  function renderPagar() {
-    workspace.renderTitles('A pagar', 'p-titulos');
-    const res = get('resumo'), dias35 = get('pagar_dias');
-    const pico = dias35.reduce((a, r) => (r.valor > a.valor ? r : a), dias35[0]);
-    $('#p-finding').replaceChildren('Vencem ', forte(-1, brl(R(res, 'pagar_7_dias'))), ' nos próximos 7 dias e ', forte(-1, brl(R(res, 'pagar_30_dias'))), ' em 30 dias. O dia mais pesado é ', h('span', { class: 'band', text: `${quando(pico.dia).toLowerCase()}, com ${brl(pico.valor)}` }), '.');
-    $('#p-strip').replaceChildren(
-      kpi('Em aberto', brlS(-R(res, 'pagar_aberto')), 'Produtores, folha, impostos e despesas', { cls: sinal(-R(res, 'pagar_aberto')) }),
-      kpi('Vence em 7 dias', brlS(-R(res, 'pagar_7_dias')), 'De hoje até a próxima semana', { cls: sinal(-R(res, 'pagar_7_dias')) }),
-      kpi('Vence em 30 dias', brlS(-R(res, 'pagar_30_dias')), 'De hoje até daqui a 30 dias', { cls: sinal(-R(res, 'pagar_30_dias')) }),
-      kpi('Abatimentos em 90 dias', brlS(R(res, 'abatimentos_90_dias')), 'Descontados de produtores', { cls: sinal(R(res, 'abatimentos_90_dias')) }));
-    const cal = $('#p-cal');
-    safe(cal, () => {
-      const max = Math.max(1, ...dias35.map((r) => r.valor));
-      cal.replaceChildren(...dias35.map((r) => {
-        const k = r.valor / max;
-        const b = h('button', { type: 'button', onclick: () => {
-          const rows = get('pagar_abertos').filter(p => p.vencimento === r.dia);
-          CaixaUI.dialog('Pagamentos de ' + dBR(r.dia), h('div', { class: 'stack' }, ...(rows.length ? rows.map(p => h('p', {}, p.fornecedor + ' · ' + p.documento + ' · ', h('strong', { class: 'neg', text: brlS(-p.liquido) }))) : [h('p', { class: 'empty', text: 'Nenhum título em aberto nesta data.' })])));
-        }, class: (r.passado ? 'past' : '') + (r.hoje ? ' today' : '') + (k > 0.55 ? ' strong' : ''), 'aria-label': `${dBR(r.dia)}: ${r.valor ? brl(r.valor) + ', ' + int(r.qtd) + (r.qtd === 1 ? ' título' : ' títulos') : 'nada a pagar'}`, title: r.valor ? `${dBR(r.dia)}: ${brl(r.valor)} em ${int(r.qtd)} ${r.qtd === 1 ? 'título' : 'títulos'}` : dBR(r.dia) },
-          h('span', { class: 'fill', style: `opacity:${r.valor ? (0.1 + 0.85 * k).toFixed(2) : 0}` }),
-          h('span', { class: 'd', text: dCurta(r.dia) }),
-          h('span', { class: 'v', text: r.valor ? MENOS + brlC(r.valor) : '' }));
-        return b;
-      }));
-    });
-    drawPagarAbertos();
+  // ------- TESOURARIA -------
+  function renderTesouraria(sub) {
+    if (sub === 'movimentacoes') workspace.renderMovimentos();
+    else if (sub === 'fechamento') renderFechamento();
+    else if (sub === 'conciliacao') renderConc();
+    else workspace.renderContas((conta) => { workspace.filtrarConta(conta); irPara('tesouraria/movimentacoes'); });
   }
-  function drawPagarAbertos() {
-    const tb = $('#p-abertos');
-    safe(tb, () => {
-      const rows = get('pagar_abertos');
-      $('#p-abertos-meta').textContent = `${int(rows.length)} títulos, por vencimento`;
-      const show = pAll ? rows : rows.slice(0, 15);
-      tb.replaceChildren(...show.map((r) => h('tr', {},
-        h('td', {}, quando(r.vencimento), r.situacao !== 'A vencer' ? h('span', { class: 'sub' }, h('span', { class: 'pill ' + (r.situacao === 'Vencido' ? 'pill-neg' : 'pill-warn'), text: r.situacao })) : null),
-        h('td', { class: 'id' }, h('b', { text: r.fornecedor }), h('span', { class: 'sub', text: r.documento })),
-        h('td', { class: 'hide-sm', text: r.categoria }),
-        h('td', { class: 'num' }, h('span', { class: sinal(-r.liquido), text: brlS(-r.liquido) }), r.abatimento ? h('span', { class: 'sub', text: `${brl(r.valor)} menos ${brl(r.abatimento)}` }) : null))));
-      const more = $('#p-more');
-      more.hidden = pAll || rows.length <= 15;
-      more.textContent = `Mostrar todos os ${int(rows.length)}`;
-    });
-  }
-
-  // ------- FECHAMENTO -------
-  let cDia = null;
   function renderFechamento() {
     const dd = get('fechamento_dias');
-    if (!dd.length) { $('#c-finding').textContent = 'Ainda não há fechamentos nos dados.'; $('#c-dia').replaceChildren(); $('#c-itens').replaceChildren(); $('#c-lista').replaceChildren(); return; }
-    if (!cDia || !dd.some((d) => d.data === cDia)) cDia = dd[dd.length - 1].data;
-    const ult = dd[dd.length - 1];
+    $('#c-empty').hidden = dd.length > 0;
+    if (!dd.length) { $('#c-finding').textContent = ''; $('#c-lista').replaceChildren(); return; }
     const certos = dd.filter((d) => Math.abs(d.diferenca) < 0.01).length;
-    $('#c-finding').replaceChildren(
-      Math.abs(ult.diferenca) >= 0.01
-        ? h('span', {}, 'A gaveta de ', h('span', { class: 'band', text: `${dBR(ult.data)} fechou com ${brlS(ult.diferenca)}` }), ` de diferença. Dos últimos ${int(dd.length)} fechamentos, ${int(certos)} bateram no centavo.`)
-        : h('span', { text: `A gaveta de ${dBR(ult.data)} fechou certa. Dos últimos ${int(dd.length)} fechamentos, ${int(certos)} bateram no centavo.` }));
-    const sel = $('#c-dia');
-    sel.replaceChildren(...dd.slice().reverse().map((d) => h('option', { value: d.data, text: dBR(d.data) + (Math.abs(d.diferenca) >= 0.01 ? ', com diferença' : '') })));
-    sel.value = cDia;
-    drawFechDia();
-    safe($('#c-lista'), () => {
-      $('#c-lista').replaceChildren(...dd.slice().reverse().map((d) => h('tr', { style: d.data === cDia ? 'background:var(--raised)' : null },
-        h('td', {}, h('button', { type: 'button', class: 'btn btn-text', style: 'padding:0;height:auto', text: dBR(d.data), onclick: () => { cDia = d.data; renderFechamento(); } })),
-        h('td', { class: 'hide-sm', text: d.responsavel }),
-        h('td', { class: 'num ' + sinal(d.esperado), text: brl(d.esperado) }),
-        h('td', { class: 'num ' + sinal(d.contado), text: brl(d.contado) }),
-        h('td', { class: 'num ' + (Math.abs(d.diferenca) >= 0.01 ? sinal(d.diferenca) : 'dash'), text: Math.abs(d.diferenca) >= 0.01 ? brlS(d.diferenca) : brl(0) }))));
-    });
+    $('#c-finding').textContent = `${int(certos)} de ${int(dd.length)} bateram no centavo`;
+    safe($('#c-lista'), () => $('#c-lista').replaceChildren(...dd.slice().reverse().map((d) => h('tr', {},
+      h('td', { class: 'id' }, h('button', { type: 'button', class: 'entry-detail', title: 'Ver itens da gaveta', text: dBR(d.data), onclick: () => detalheFechamento(d) }), h('span', { class: 'sub', text: d.responsavel })),
+      h('td', { class: 'num ' + sinal(d.esperado), text: brl(d.esperado) }),
+      h('td', { class: 'num ' + sinal(d.contado), text: brl(d.contado) }),
+      h('td', { class: 'num ' + (Math.abs(d.diferenca) >= 0.01 ? sinal(d.diferenca) : 'dash'), text: Math.abs(d.diferenca) >= 0.01 ? brlS(d.diferenca) : brl(0) })))));
   }
-  function drawFechDia() {
-    const itens = get('fechamento_itens').filter((i) => i.data === cDia);
-    const d = get('fechamento_dias').find((x) => x.data === cDia);
-    $('#c-dia-title').textContent = `Gaveta de ${dBR(cDia)}`;
-    $('#c-resp').textContent = d ? `Fechado por ${d.responsavel}` : '';
-    safe($('#c-itens'), () => {
-      $('#c-itens').replaceChildren(...itens.map((i) => {
-        const forte = ['Esperado na gaveta', 'Contado na gaveta', 'Diferença'].includes(i.item);
-
-        return h('tr', { style: i.item === 'Vendas em Pix' ? 'border-top:8px solid transparent' : null },
-          h('td', { style: forte ? 'font-weight:600' : null, text: i.item }),
-          h('td', { class: 'num ' + sinal(i.valor), style: forte ? 'font-weight:600' : null, text: i.item === 'Diferença' || i.item === 'Sangrias para o banco' ? brlS(i.valor) : brl(i.valor) }));
-      }));
-    });
+  function detalheFechamento(d) {
+    const itens = get('fechamento_itens').filter((i) => i.data === d.data);
+    CaixaUI.dialog(`Gaveta de ${dBR(d.data)}`, h('div', { class: 'stack' },
+      h('p', { class: 'stamp', text: `Fechado por ${d.responsavel}. Pix, cartão, boleto e cheque não passam pela gaveta.` }),
+      h('dl', { class: 'kv' }, ...itens.map((i) => h('div', {}, h('dt', { text: i.item }), h('dd', { class: sinal(i.valor) || null, text: i.item === 'Diferença' || i.item === 'Sangrias para o banco' ? brlS(i.valor) : brl(i.valor) }))))));
   }
 
-  // ------- LANÇAMENTOS -------
-  const lState = { q: '', tipo: '', de: '', ate: '', sel: {}, sort: 'data', dir: -1, n: 50 };
-  function renderLanc() {
-    const rows = get('lanc_view');
-    $$('#lancamentos select[data-col]').forEach((s) => {
-      if (s.options.length) return;
-      const vals = [...new Set(rows.map((r) => r[s.dataset.col]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-      s.replaceChildren(h('option', { value: '', text: s.dataset.all }), ...vals.map((v) => h('option', { value: v, text: v })));
-      s.setAttribute('aria-label', s.dataset.all);
-    });
-    $('#l-meta').textContent = `${int(rows.length)} nos últimos 90 dias`;
-    $('#l-de').min = rows[0]?.data || ''; $('#l-de').max = HOJE; $('#l-ate').min = rows[0]?.data || ''; $('#l-ate').max = HOJE;
-    drawLanc();
-  }
-  function drawLanc() {
-    const tb = $('#l-body');
-    safe(tb, () => {
-      const q = lState.q.trim().toLocaleLowerCase('pt-BR');
-      const invalid = lState.de && lState.ate && lState.de > lState.ate;
-      $('#l-ate').setCustomValidity(invalid ? 'A data final deve ser igual ou posterior à inicial.' : '');
-      let rows = get('lanc_view').filter((r) => !invalid && (!lState.tipo || r.tipo === lState.tipo) && (!lState.de || r.data >= lState.de) && (!lState.ate || r.data <= lState.ate) &&
-        Object.entries(lState.sel).every(([k, v]) => !v || r[k] === v) && (!q || (r.descricao + ' ' + r.contraparte).toLocaleLowerCase('pt-BR').includes(q)));
-      const val = (r) => (lState.sort === 'valor' ? (r.tipo === 'saida' ? -r.valor : r.valor) : r[lState.sort]);
-      rows = rows.slice().sort((a, b) => { const x = val(a), y = val(b); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'pt-BR')) * lState.dir || b.id.localeCompare(a.id); });
-      $$('#lancamentos th').forEach((th) => { const b = $('.sort', th); if (b && b.dataset.sort === lState.sort) th.setAttribute('aria-sort', lState.dir < 0 ? 'descending' : 'ascending'); else th.removeAttribute('aria-sort'); });
-      const ent = rows.filter((r) => r.tipo === 'entrada').reduce((s, r) => s + Math.round(r.valor * 100), 0) / 100;
-      const sai = rows.filter((r) => r.tipo === 'saida').reduce((s, r) => s + Math.round(r.valor * 100), 0) / 100;
-      const show = rows.slice(0, lState.n);
-      $('#l-count').replaceChildren(...(rows.length ? [`Mostrando ${int(show.length)} de ${int(rows.length)} lançamentos. Entradas `, h('span', { class: sinal(ent), text: brlS(ent) }), ', saídas ', h('span', { class: sinal(-sai), text: brlS(-sai) }), '.'] : []));
-      tb.replaceChildren(...show.map((r) => h('tr', {},
-        h('td', { text: dBR(r.data) }),
-        h('td', { class: 'id' }, h('button', { type: 'button', class: 'entry-detail', text: r.descricao || 'Ver movimentação', onclick: () => {
-          const detail = h('dl', { class: 'kv' });
-          for (const [label, value] of [['Identificação', r.id], ['Data', dBR(r.data)], ['Descrição', r.descricao], ['Cliente / fornecedor', r.contraparte], ['Categoria', r.categoria], ['Conta', r.conta], ['Forma', r.forma], ['Tipo', r.tipo === 'saida' ? 'Saída' : 'Entrada'], ['Valor', brlS(r.tipo === 'saida' ? -r.valor : r.valor)]]) detail.append(h('div', {}, h('dt', { text: label }), h('dd', { text: value || '—' })));
-          CaixaUI.dialog('Detalhes da movimentação', detail);
-        } }), h('span', { class: 'sub', text: [r.contraparte, r.forma].filter(Boolean).join(', ') })),
-        h('td', { class: 'hide-sm', text: r.categoria }),
-        h('td', { class: 'hide-sm', text: r.conta }),
-        h('td', { class: 'num ' + sinal(r.tipo === 'saida' ? -r.valor : r.valor), text: r.tipo === 'saida' ? brlS(-r.valor) : brlS(r.valor) }))));
-      $('#l-empty').hidden = rows.length > 0;
-      const more = $('#l-more'); more.hidden = rows.length <= lState.n;
-    });
-  }
-
-  // ------- INDICADORES -------
-  function renderInd() {
+  // ------- RESULTADOS -------
+  function renderResultados() {
     const ind = get('indicadores'), res = get('resumo');
     const I = (k) => R(ind, k, 'indicador');
-    $('#i-finding').replaceChildren('Nos últimos 30 dias a Mundo Novo faturou ', forte(I('faturamento_30d'), brl(I('faturamento_30d'))), ', com ticket médio de ', h('span', { class: 'band', text: brl(I('ticket_medio_pedido')) }), ' por pedido.');
-    $('#i-strip-1').replaceChildren(
-      kpi('Faturamento em 30 dias', brl(I('faturamento_30d')), 'Pedidos à vista e a prazo emitidos no período', { cls: sinal(I('faturamento_30d')) }),
-      kpi('Ticket médio por pedido', brl(I('ticket_medio_pedido')), 'Faturamento dividido pelos pedidos', { cls: sinal(I('ticket_medio_pedido')) }),
-      kpi('Faturamento por cliente', brl(I('ticket_medio_cliente')), 'Faturamento dividido pelos clientes que compraram', { cls: sinal(I('ticket_medio_cliente')) }),
-      kpi('Margem bruta estimada', pct(I('margem_bruta_estimada')), 'Um menos compras de frutas sobre faturamento, 90 dias'));
-    $('#i-strip-2').replaceChildren(
-      kpi('Ciclo financeiro', diasS(I('ciclo_financeiro')), 'Prazo de recebimento menos prazo de pagamento'),
-      kpi('Necessidade de capital de giro', brl(I('capital_de_giro')), 'Carteira a receber menos o que se deve a produtores'),
-      kpi('Inadimplência', pct(I('inadimplencia')), 'Vencido sobre a carteira em aberto'),
-      kpi('Comissões a pagar em 30 dias', brlS(-I('comissoes_30d')), 'Comissões de vendedores já lançadas', { cls: sinal(-I('comissoes_30d')) }));
-    safe($('#i-desp'), () => barList($('#i-desp'), get('despesas_categoria').map((d) => ({ label: d.categoria, value: d.valor })), { thin: true, all: true, colour: 'var(--negative)', format: (v) => brlS(-v), tom: 'neg' }));
+    const desp = get('despesas_categoria');
+    const totDesp = desp.reduce((s, d) => s + Math.round(d.valor * 100), 0) / 100;
+    $('#i-finding').textContent = `Últimos 30 dias até ${dBR(HOJE)}. Faturamento é o que foi vendido, não o que entrou no caixa.`;
+    $('#i-strip').replaceChildren(
+      kpiM('Faturamento em 30 dias', brl(I('faturamento_30d')), 'Vendas a prazo e à vista', { cls: sinal(I('faturamento_30d')), calc: ['indicadores'] }),
+      kpiM('Margem bruta estimada', pct(I('margem_bruta_estimada')), 'Estimativa de 90 dias: usa compras, não o custo das vendas', { calc: ['indicadores'] }),
+      kpiM('Despesas operacionais', brlS(-totDesp), 'Saídas em 30 dias, sem compra de frutas', { cls: sinal(-totDesp), calc: ['despesas_categoria'] }),
+      kpiM('Inadimplência', pct(I('inadimplencia')), 'Vencido sobre a carteira a receber', { cls: I('inadimplencia') > 0 ? 'neg' : '', calc: ['indicadores'] }));
+    const el = $('#i-chart');
+    tingir(el);
+    $('#i-legend').replaceChildren();
+    safe(el, () => {
+      const m = get('resultados_mensais');
+      if (!m.length) { el.replaceChildren(h('p', { class: 'empty', text: 'Ainda não há lançamentos suficientes para comparar meses.' })); $('#i-chart-note').textContent = ''; return; }
+      const nome = (x) => MESES[Number(x.mes.slice(5, 7)) - 1].slice(0, 3) + '/' + x.mes.slice(2, 4);
+      const parcial = m.findIndex((x) => x.parcial);
+      const out = Charts.diverging(el, { labels: m.map(nome), up: m.map((x) => x.faturamento_centavos / 100), down: m.map((x) => x.despesas_centavos / 100), above: 'Faturamento', below: 'Despesas operacionais', partial: parcial >= 0 ? parcial : null, format: brl, tickFormat: fmtC, height: 240 });
+      if (out && out.legend) $('#i-legend').append(out.legend);
+      $('#i-chart-note').textContent = (parcial >= 0 ? `${nome(m[parcial])} vai até ${dBR(HOJE)}. ` : '') + 'Só entram meses inteiros cobertos pelos lançamentos.';
+    });
+    safe($('#i-desp'), () => barList($('#i-desp'), desp.map((d) => ({ label: d.categoria, value: d.valor })), { thin: true, all: true, colour: 'var(--negative)', format: (v) => brlS(-v), tom: 'neg', empty: 'Nenhuma despesa operacional nos últimos 30 dias.' }));
+    $('#i-extra').replaceChildren(...[
+      ['Ticket médio por pedido', ou(I('ticket_medio_pedido'), brl)], ['Faturamento por cliente', ou(I('ticket_medio_cliente'), brl)],
+      ['Prazo médio de recebimento', ou(R(res, 'prazo_medio_recebimento'), dias)], ['Prazo médio de pagamento a produtores', ou(R(res, 'prazo_medio_pagamento'), dias)],
+      ['Ciclo financeiro', ou(I('ciclo_financeiro'), diasS)], ['Necessidade de capital de giro (estimada)', ou(I('capital_de_giro'), brl)],
+      ['Comissões a pagar em 30 dias', ou(I('comissoes_30d'), (v) => brlS(-v))],
+    ].map(([k, v]) => h('div', {}, h('dt', { text: k }), h('dd', { text: v }))));
+  }
+
+  // ------- CONFIGURAÇÕES -------
+  function renderConfig(sub) {
+    if (sub === 'categorias') workspace.renderCategorias();
+    else if (sub === 'dados') { renderDados(); renderSobre(); }
+  }
+  function renderSobre() {
+    $('#d-sobre').replaceChildren(...[
+      ['Origem', origem()], ['Posição financeira', dBR(HOJE)],
+      ['Atualização', 'Os dados não são atualizados em tempo real. Valem para a posição acima.'],
+      ['Operações', 'Cadastros, baixas e estornos dependem de um sistema com gravação. O painel só consulta.'],
+    ].map(([k, v]) => h('div', {}, h('dt', { text: k }), h('dd', { text: v }))));
   }
 
   // ------- RESUMO DO DIA -------
@@ -773,9 +640,7 @@
   };
   function renderDados() {
     const imp = Object.keys(IMPORT_META).length;
-    $('#d-finding').textContent = imp
-      ? `${int(imp)} de ${int(FONTES.length)} fontes usam dados importados. As outras continuam com os dados de exemplo.`
-      : 'Hoje o painel inteiro usa dados de exemplo. Importe as planilhas reais uma fonte por vez; o que não for importado continua como exemplo.';
+    $('#d-finding').textContent = imp ? `${int(imp)} de ${int(FONTES.length)} fontes importadas` : 'Todas as fontes usam dados de exemplo';
     $('#d-fontes').replaceChildren(...FONTES.map((n) => {
       const def = FONTES_DEF[n], m = IMPORT_META[n];
       return h('tr', {},
@@ -940,82 +805,81 @@
   function recarregar() {
     for (const k of Object.keys(cache)) delete cache[k];
     HOJE = DATA.contas[0] ? DATA.contas[0].data_saldo : hojeReal();
-    done.clear();
-    cDia = null; rState.all = false; rState.cartaoAll = false; pAll = false; lState.n = 50; lState.sel = {};
-    $$('#lancamentos select[data-col]').forEach((s) => s.replaceChildren());
+    workspace.reiniciar();
     atualizarContagem();
     atualizarOrigem();
     if (!$('#g-resumo').hidden) $('#g-resumo-txt').value = textoResumo();
-    atual = null;
     route();
   }
   function atualizarContagem() {
-    try {
-      const n = R(get('resumo'), 'vencidos_qtd');
-      window.CaixaMenu.setReceivableCount(n);
-    } catch (e) { console.error(e); }
+    try { window.CaixaMenu.setReceivableCount(R(get('resumo'), 'vencidos_qtd')); } catch (e) { console.error(e); }
   }
 
   // ------- ROTAS -------
-  const origem = () => { const n = Object.keys(IMPORT_META).length; return n === 0 ? 'Dados de exemplo · valores demonstrativos' : n < FONTES.length ? `Fontes mistas · ${n} importadas e ${FONTES.length - n} de exemplo` : 'Dados importados · armazenamento neste navegador'; };
+  const origem = () => { const n = Object.keys(IMPORT_META).length; return n === 0 ? 'Dados de exemplo · valores demonstrativos' : n < FONTES.length ? `Fontes mistas · ${n} importadas e ${FONTES.length - n} de exemplo` : 'Dados importados · guardados neste navegador'; };
   function atualizarOrigem() {
     $('#data-origin').textContent = origem() + (avisosFontes.length ? ' · Não foi possível recuperar fontes salvas: ' + avisosFontes.join(', ') + '. Confira a importação.' : '');
-    $('#workspace-date').textContent = 'Posição financeira · ' + dBR(HOJE);
+    $('#workspace-date').textContent = `Posição de ${dBR(HOJE)} · sem atualização em tempo real`;
   }
-  const workspace = criarWorkspace({ get, posicao: () => HOJE, origem, abrirMovimentos: conta => {
-    Object.assign(lState, { q: '', tipo: '', de: '', ate: '', sel: { conta }, n: 50 });
-    $('#l-q').value = ''; $('#l-tipo').value = ''; $('#l-de').value = ''; $('#l-ate').value = '';
-    $$('#lancamentos select[data-col]').forEach(s => { s.value = ''; });
-    if (!done.has('lancamentos')) { renderLanc(); done.add('lancamentos'); }
-    $('#lancamentos select[data-col="conta"]').value = conta;
-    drawLanc(); location.hash = '#lancamentos';
-  } });
-  const VIEWS = { geral: renderGeral, fluxo: renderFluxo, receber: renderReceber, pagar: renderPagar, fechamento: renderFechamento, lancamentos: renderLanc, indicadores: renderInd, conciliacao: renderConc, dados: renderDados, ...workspace.views };
-  const NOMES = { geral: 'Visão geral', fluxo: 'Fluxo de caixa', receber: 'A receber', pagar: 'A pagar', fechamento: 'Fechamento', lancamentos: 'Lançamentos', indicadores: 'Indicadores', conciliacao: 'Conciliação', dados: 'Importar dados', contas: 'Contas financeiras', pessoas: 'Clientes e fornecedores', categorias: 'Categorias', relatorios: 'Relatórios', configuracoes: 'Configurações' };
-  const done = new Set();
+  const irPara = (destino) => { location.hash = '#' + destino; };
+  const workspace = criarWorkspace({ get, posicao: () => HOJE, origem, irPara });
+  const VIEWS = { geral: renderGeral, fluxo: renderFluxo, receber: renderReceber, pagar: renderPagar, tesouraria: renderTesouraria, resultados: renderResultados, configuracoes: renderConfig };
+  const NOMES = { geral: 'Visão geral', fluxo: 'Fluxo de caixa', receber: 'Contas a receber', pagar: 'Contas a pagar', tesouraria: 'Tesouraria', resultados: 'Resultados', configuracoes: 'Configurações' };
+  const SUBS = { receber: ['titulos', 'clientes'], pagar: ['titulos', 'fornecedores'], tesouraria: ['contas', 'movimentacoes', 'fechamento', 'conciliacao'], configuracoes: ['dados', 'categorias', 'aparencia'] };
+  // Endereços das páginas antigas continuam funcionando.
+  const ALIAS = { fechamento: 'tesouraria/fechamento', lancamentos: 'tesouraria/movimentacoes', contas: 'tesouraria/contas', conciliacao: 'tesouraria/conciliacao', indicadores: 'resultados', dados: 'configuracoes/dados', categorias: 'configuracoes/categorias', pessoas: 'receber/clientes', relatorios: 'geral' };
   let atual = null;
   function route() {
-    const [v, arg] = location.hash.slice(1).split('/');
+    let [v, arg] = location.hash.slice(1).split('/');
+    if (ALIAS[v]) { history.replaceState(null, '', '#' + ALIAS[v]); [v, arg] = ALIAS[v].split('/'); }
     const view = VIEWS[v] ? v : 'geral';
-    if (view === 'receber' && arg) { rState.only = arg === 'vencidos'; rState.limite = arg === 'limite'; rState.sort = arg === 'limite' ? 'uso_limite' : 'vencido'; rState.dir = -1; if (done.has('receber')) { $('#r-only').checked = rState.only; drawClientes(); } }
+    if (view === 'receber' && arg === 'vencidos') { workspace.filtrarTitulos('A receber', { situacao: 'Vencido' }); arg = 'titulos'; }
+    if (view === 'receber' && arg === 'limite') { workspace.filtrarClientes({ situacao_cliente: 'limite' }); arg = 'clientes'; }
+    if (view === 'pagar' && arg === 'vencidos') { workspace.filtrarTitulos('A pagar', { situacao: 'Vencido' }); arg = 'titulos'; }
+    if ((view === 'receber' || view === 'pagar') && arg === 'abertos') { workspace.filtrarTitulos(view === 'receber' ? 'A receber' : 'A pagar', { situacao: 'aberto' }); arg = 'titulos'; }
+    const subs = SUBS[view];
+    const sub = subs ? (subs.includes(arg) ? arg : subs[0]) : null;
     $$('main > .view').forEach((s) => { s.hidden = s.id !== view; });
+    if (subs) {
+      $$(`#${view} [data-panel]`).forEach((p) => { p.hidden = p.dataset.panel !== sub; });
+      $$(`#${view} .subnav a`).forEach((a) => { if (a.dataset.sub === sub) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+      requestAnimationFrame(() => placeSubnavInk($(`#${view} .subnav`), atual === view));
+    }
     window.CaixaMenu.setActive(view);
-    $$('a[data-view]').forEach((a) => { if (a.dataset.view === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    $$('a.settings-link').forEach((a) => { if (view === 'configuracoes') a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     $('#where').textContent = NOMES[view];
     document.title = `${NOMES[view]} · Caixa Novo · Mundo Novo`;
-    if (!done.has(view)) { safe($('#' + view), VIEWS[view]); done.add(view); }
+    safe($('#' + view), () => VIEWS[view](sub));
     fecharMenu();
     if (atual && atual !== view) { $('#main').focus({ preventScroll: true }); window.scrollTo(0, 0); }
-    if (view === 'receber' && arg) requestAnimationFrame(() => $('#r-clientes').scrollIntoView({ block: 'start' }));
     atual = view;
   }
   window.addEventListener('hashchange', route);
+  // Realce das abas internas: desliza entre abas da mesma página e aparece no lugar ao chegar nela.
+  function placeSubnavInk(nav, glide) {
+    if (!nav) return;
+    let ink = nav.querySelector('.subnav-ink');
+    if (!ink) { ink = h('span', { class: 'subnav-ink', 'aria-hidden': 'true' }); nav.append(ink); }
+    const link = nav.querySelector('a[aria-current="page"]');
+    if (!link) return;
+    if (!glide) ink.style.transition = 'none';
+    ink.style.transform = `translateX(${link.offsetLeft}px)`;
+    ink.style.width = `${link.offsetWidth}px`;
+    if (!glide) { void ink.offsetWidth; ink.style.transition = ''; }
+  }
+  window.addEventListener('resize', () => { if (atual) placeSubnavInk($(`#${atual} .subnav`), false); });
+  // Um indicador clicado de novo reaplica o filtro, mesmo com o endereço igual.
+  document.addEventListener('click', (e) => {
+    const hit = e.target.closest('.kpi-hit');
+    if (hit && hit.hash === location.hash && !e.ctrlKey && !e.metaKey) { e.preventDefault(); route(); }
+  });
 
   // ------- CONTROLES -------
-  $$('.ktab').forEach((t) => t.addEventListener('click', () => { chartTab = t.id.slice(3); drawGeralChart(); }));
-  $('.ktabs').addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { chartTab = chartTab === 'saldo' ? 'fluxo' : 'saldo'; drawGeralChart(); $('#kt-' + chartTab).focus(); } });
-  let tq;
-  $('#r-q').addEventListener('input', (e) => { clearTimeout(tq); tq = setTimeout(() => { rState.q = e.target.value; drawClientes(); }, 150); });
-  $('#r-nota').addEventListener('change', (e) => { rState.nota = e.target.value; drawClientes(); });
-  $('#r-only').addEventListener('change', (e) => { rState.only = e.target.checked; rState.limite = false; drawClientes(); });
-  $$('#r-clientes .sort').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.sort; rState.dir = rState.sort === k ? -rState.dir : -1; rState.sort = k; drawClientes(); }));
-  $('#r-cli-more').addEventListener('click', () => { rState.all = true; drawClientes(); });
-  $('#r-cartao-more').addEventListener('click', () => { rState.cartaoAll = true; drawCartao(); });
-  $('#p-more').addEventListener('click', () => { pAll = true; drawPagarAbertos(); });
-  $('#c-dia').addEventListener('change', (e) => { cDia = e.target.value; renderFechamento(); });
-  let tl;
-  $('#l-q').addEventListener('input', (e) => { clearTimeout(tl); tl = setTimeout(() => { lState.q = e.target.value; lState.n = 50; drawLanc(); }, 150); });
-  $('#l-tipo').addEventListener('change', (e) => { lState.tipo = e.target.value; lState.n = 50; drawLanc(); });
-  $$('#lancamentos select[data-col]').forEach((s) => s.addEventListener('change', () => { lState.sel[s.dataset.col] = s.value; lState.n = 50; drawLanc(); }));
-  for (const [id, k] of [['#l-de', 'de'], ['#l-ate', 'ate']]) $(id).addEventListener('change', (e) => { e.target.setCustomValidity(''); const v = e.target.value; if (!v || e.target.validity.valid) { lState[k] = v; lState.n = 50; drawLanc(); } });
-  $('#l-clear').addEventListener('click', () => {
-    Object.assign(lState, { q: '', tipo: '', de: '', ate: '', sel: {}, n: 50 });
-    $('#l-q').value = ''; $('#l-tipo').value = ''; $('#l-de').value = ''; $('#l-ate').value = '';
-    $$('#lancamentos select[data-col]').forEach((s) => { s.value = ''; });
-    drawLanc();
-  });
-  $('#l-more').addEventListener('click', () => { lState.n += 50; drawLanc(); });
-  $$('#lancamentos .sort').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.sort; lState.dir = lState.sort === k ? -lState.dir : -1; lState.sort = k; drawLanc(); }));
+  $('#g-alerts-more').addEventListener('click', () => { alertasTodos = !alertasTodos; drawAlertas(); });
+  $$('[data-f-tab]').forEach((b) => b.addEventListener('click', () => {
+    $$('[data-f-tab]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    $$('[data-f-panel]').forEach((p) => { p.hidden = p.dataset.fPanel !== b.dataset.fTab; });
+  }));
 
   // Menu do celular
   const sheet = $('#sheet');
@@ -1045,13 +909,13 @@
     if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
     $$('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)));
     try { localStorage.setItem('mn-tema', t); } catch (e) { /* sem armazenamento: segue o sistema */ }
-    for (const v of done) safe($('#' + v), VIEWS[v]);
+    if (atual) route();
   };
   $$('[data-theme-set]').forEach((b) => b.addEventListener('click', () => aplicarTema(b.dataset.themeSet)));
   let tema = 'auto';
   try { tema = localStorage.getItem('mn-tema') || 'auto'; } catch (e) { tema = 'auto'; }
   if (tema !== 'auto') { document.documentElement.setAttribute('data-theme', tema); $$('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === tema))); }
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.hasAttribute('data-theme')) for (const v of done) safe($('#' + v), VIEWS[v]); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!document.documentElement.hasAttribute('data-theme') && atual) route(); });
 
   // Contagem de vencidos no menu (fila que pede ação)
   atualizarContagem();

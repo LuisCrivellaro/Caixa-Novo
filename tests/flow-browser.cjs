@@ -14,6 +14,7 @@ module.exports = async function checkFlow(browser, url, root) {
     await page.goto(url + '/#fluxo');
     await page.locator('#app-loading').waitFor({ state: 'hidden' });
     assert.equal(await selected().innerText(), 'Semana');
+    await page.locator('#f-mais summary').click();
     const ranges = {
       Dia: ['dia', '2026-10-28', '2026-10-27', '2026-10-27'],
       Semana: ['semana', '2026-10-26', '2026-10-19', '2026-10-25'],
@@ -32,8 +33,7 @@ module.exports = async function checkFlow(browser, url, root) {
       const previous = inRange(anteriorInicio, anteriorFim);
       const sum = (rows, tipo) => rows.filter(row => row.tipo === tipo).reduce((total, row) => total + row.valor_centavos, 0);
       const entry = sum(current, 'entrada'), exit = sum(current, 'saida');
-      assert.deepEqual(await page.locator('#f-finding strong').allTextContents().then(values => values.map(cents)), [entry, -exit]);
-      assert.equal(cents(await page.locator('#f-finding .band').innerText()), entry - exit);
+      assert.deepEqual(await page.locator('#f-strip .kpi-value').allTextContents().then(values => values.map(cents)), [entry, -exit, entry - exit]);
       assert.equal(await page.locator('#f-cat-current').innerText(), label + ' atual');
       assert.equal(await page.locator('#f-cat-previous').innerText(), label + ' anterior');
       const expectedCategories = new Map();
@@ -55,11 +55,13 @@ module.exports = async function checkFlow(browser, url, root) {
       assert.ok(chart.length > 0);
       chartStates.add(JSON.stringify(chart)); summaryStates.add(await page.locator('#f-finding').innerText());
       assert.ok((await page.locator('#f-details tbody tr td:nth-child(2)').allTextContents()).every(text => text === grao));
-      assert.match(await page.locator('#f-chart-note').innerText(), new RegExp('por ' + grao.replace('mes', 'mês')));
+      assert.match(await page.locator('#f-chart-title').innerText(), new RegExp('por ' + grao.replace('mes', 'mês') + '$'));
     }
     assert.equal(chartStates.size, 4); assert.equal(summaryStates.size, 4);
     await choose('Semana');
+    await page.getByRole('button', { name: 'Por período', exact: true }).click();
     const table = page.locator('#f-details');
+    assert.ok(await table.isVisible());
     await table.getByRole('searchbox').fill('realizado');
     await table.getByRole('combobox', { name: 'Natureza', exact: true }).selectOption('realizado');
     await table.getByRole('combobox', { name: 'Agrupamento', exact: true }).selectOption('semana');
@@ -107,8 +109,9 @@ module.exports = async function checkFlow(browser, url, root) {
         }));
       }
     }
-    await page.locator('.topbar').getByRole('button', { name: 'Abrir menu' }).click();
-    await page.locator('#sheet [data-theme-set=dark]').click(); await page.keyboard.press('Escape');
+    await page.evaluate(() => { location.hash = 'configuracoes/aparencia'; });
+    await page.locator('#s-aparencia [data-theme-set=dark]').click();
+    await page.evaluate(() => { location.hash = 'fluxo'; }); await page.locator('#fluxo').waitFor({ state: 'visible' });
     await choose('Semana');
     await page.screenshot({ path: resolve(root, 'test-results/flow-mobile.png'), fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1000 });

@@ -66,24 +66,31 @@
     notify(`${rows.length} registros exportados. ${context}`);
   }
   // A tabela recebe somente resultados da camada de cálculos. Estado preservado por instância.
-  function dataTable(host, { columns, rows, name, filters = [], dateKey, context = '', state = { query: '', sort: null, dir: 1, page: 1, de: '', ate: '', filters: {} } }) {
+  // filters/advanced: { label, key, options?: [{ value, label, test? }], default? }. advanced fica recolhido.
+  // columns: { label, key, numeric, render, export, action, search }. action abre detalhes pelo onOpen.
+  function dataTable(host, { columns, rows, name, filters = [], advanced = [], dateKey, context = '', onOpen, order, searchKeys, emptyText, state = { query: '', sort: null, dir: 1, page: 1, de: '', ate: '', filters: {} } }) {
     const errorId = `table-error-${++tableSequence}`;
-    const input = el('input', { type: 'search', name: 'pesquisa', autocomplete: 'off', class: 'input', placeholder: 'Pesquisar registros…', 'aria-label': `Pesquisar ${name}` });
+    const input = el('input', { type: 'search', name: 'pesquisa', autocomplete: 'off', class: 'input', placeholder: 'Pesquisar…', 'aria-label': `Pesquisar ${name}` });
     input.value = state.query;
     const toolbar = el('div', { class: 'filters' }, el('label', { class: 'field field-grow' }, el('span', { text: 'Pesquisar' }), input));
     const body = el('tbody'), head = el('thead'), table = el('table', { 'aria-label': name }, head, body);
-    const empty = el('div', { class: 'empty', text: 'Nenhum registro encontrado. Altere os filtros ou importe os dados correspondentes.' });
+    const empty = el('div', { class: 'empty', text: emptyText || 'Nenhum registro encontrado. Altere os filtros ou importe os dados correspondentes.' });
     const count = el('span', { class: 'stamp', role: 'status', 'aria-live': 'polite' });
     const prev = el('button', { type: 'button', class: 'btn btn-ghost', text: 'Anterior' });
     const next = el('button', { type: 'button', class: 'btn btn-ghost', text: 'Próxima' });
     const pager = el('div', { class: 'table-pagination' }, count, el('div', { class: 'actions' }, prev, next));
     const exportBtn = el('button', { type: 'button', class: 'btn btn-ghost', text: 'Exportar CSV' });
     const controls = [];
-    filters.forEach(filter => {
-      const select = el('select', { class: 'select', name: filter.key, 'aria-label': filter.label }, el('option', { value: '', text: 'Todos' }), ...[...new Set([...rows.map(r => r[filter.key]), state.filters[filter.key]].filter(Boolean))].sort().map(value => el('option', { value, text: value })));
+    const allFilters = [...filters, ...advanced];
+    allFilters.forEach(filter => { if (filter.default != null && state.filters[filter.key] == null) state.filters[filter.key] = filter.default; });
+    const more = advanced.length ? el('div', { class: 'filters more-filters' }) : null;
+    allFilters.forEach(filter => {
+      const options = filter.options || [{ value: '', label: 'Todos' }, ...[...new Set([...rows.map(r => r[filter.key]), state.filters[filter.key]].filter(Boolean))].sort().map(value => ({ value, label: value }))];
+      const select = el('select', { class: 'select', name: filter.key, 'aria-label': filter.label }, ...options.map(o => el('option', { value: o.value, text: o.label })));
       select.value = state.filters[filter.key] || '';
       select.onchange = () => { state.filters[filter.key] = select.value; state.page = 1; draw(); };
-      toolbar.append(el('label', { class: 'field' }, el('span', { text: filter.label }), select));
+      select.dataset.default = filter.default || '';
+      (advanced.includes(filter) ? more : toolbar).append(el('label', { class: 'field' }, el('span', { text: filter.label }), select));
       controls.push(select);
     });
     if (dateKey) for (const [key, label] of [['de', 'De'], ['ate', 'Até']]) {
@@ -93,9 +100,23 @@
       toolbar.append(el('label', { class: 'field' }, el('span', { text: label }), field));
       controls.push(field);
     }
-    toolbar.append(el('button', { type: 'button', class: 'btn btn-text', text: 'Limpar', onclick: () => { Object.assign(state, { query: '', page: 1, de: '', ate: '', filters: {} }); input.value = ''; controls.forEach(c => { c.value = ''; }); draw(); } }), exportBtn);
+    toolbar.append(el('button', { type: 'button', class: 'btn btn-text', text: 'Limpar', onclick: () => {
+      Object.assign(state, { query: '', page: 1, de: '', ate: '', filters: {} });
+      allFilters.forEach(f => { if (f.default != null) state.filters[f.key] = f.default; });
+      input.value = ''; controls.forEach(c => { c.value = c.dataset.default || ''; }); draw();
+    } }), exportBtn);
+    const disclosure = more ? el('details', { class: 'more-filters-wrap' }, el('summary', { text: 'Mais filtros' }), more) : null;
+    if (disclosure && advanced.some(f => state.filters[f.key])) disclosure.open = true;
     const error = el('p', { class: 'field-error', id: errorId, role: 'alert' });
-    const filtered = () => rows.filter(row => (!state.query || columns.some(c => String(c.export ? c.export(row) : row[c.key] ?? '').toLocaleLowerCase('pt-BR').includes(state.query))) && Object.entries(state.filters).every(([key, value]) => !value || row[key] === value) && (!dateKey || ((!state.de || row[dateKey] >= state.de) && (!state.ate || row[dateKey] <= state.ate))));
+    const passes = (filter, row) => {
+      const value = state.filters[filter.key];
+      if (!value) return true;
+      const option = filter.options && filter.options.find(o => o.value === value);
+      return option && option.test ? option.test(row) : row[filter.key] === value;
+    };
+    const text = (c, row) => String(c.export ? c.export(row) : row[c.key] ?? '');
+    const searchable = searchKeys ? searchKeys.map(key => ({ key })) : columns;
+    const filtered = () => rows.filter(row => (!state.query || searchable.some(c => text(c, row).toLocaleLowerCase('pt-BR').includes(state.query))) && allFilters.every(f => passes(f, row)) && (!dateKey || ((!state.de || row[dateKey] >= state.de) && (!state.ate || row[dateKey] <= state.ate))));
     function draw() {
       const invalid = state.de && state.ate && state.de > state.ate;
       error.textContent = invalid ? 'A data final deve ser igual ou posterior à data inicial.' : '';
@@ -106,13 +127,14 @@
       });
       exportBtn.disabled = !!invalid;
       let visible = invalid ? [] : filtered();
+      if (!state.sort && order) visible.sort(order);
       if (state.sort) visible.sort((a, b) => {
         const x = a[state.sort], y = b[state.sort];
         return (typeof x === 'number' ? x - y : String(x ?? '').localeCompare(String(y ?? ''), 'pt-BR')) * state.dir;
       });
       const focusedKey = head.contains(document.activeElement) ? document.activeElement.dataset.sortKey : null;
       head.replaceChildren(el('tr', {}, ...columns.map(c => {
-        const th = el('th', { class: c.numeric ? 'num' : '', scope: 'col' });
+        const th = el('th', { class: [c.numeric ? 'num' : '', c.className || ''].join(' ').trim(), scope: 'col' });
         if (c.key) {
           th.setAttribute('aria-sort', state.sort === c.key ? (state.dir === 1 ? 'ascending' : 'descending') : 'none');
           th.append(el('button', { type: 'button', class: 'sort', 'data-sort-key': c.key, title: `Ordenar por ${c.label}`, text: c.label, onclick: () => { state.dir = state.sort === c.key ? -state.dir : 1; state.sort = c.key; draw(); } }));
@@ -122,7 +144,14 @@
       if (focusedKey) [...head.querySelectorAll('button')].find(button => button.dataset.sortKey === focusedKey)?.focus({ preventScroll: true });
       const pages = Math.max(1, Math.ceil(visible.length / 15));
       state.page = Math.min(state.page, pages);
-      body.replaceChildren(...visible.slice((state.page - 1) * 15, state.page * 15).map(row => el('tr', {}, ...columns.map(c => el('td', { class: c.numeric ? 'num' : '' }, c.render ? c.render(row) : String(row[c.key] ?? '—'))))));
+      const cell = (c, row) => {
+        const content = c.render ? c.render(row) : String(row[c.key] ?? '—');
+        if (!c.action || !onOpen) return content;
+        return el('button', { type: 'button', class: 'entry-detail', title: 'Ver detalhes', onclick: () => onOpen(row) }, content);
+      };
+      // Com detalhes disponíveis, a linha inteira abre o registro; o botão da primeira coluna segue para teclado e leitores de tela.
+      const rowAttrs = (row, i) => ({ class: onOpen ? 'row-link' : null, style: `--i:${i}`, onclick: onOpen ? e => { if (!e.target.closest('button, a, input, select') && !getSelection().toString()) onOpen(row); } : null });
+      body.replaceChildren(...visible.slice((state.page - 1) * 15, state.page * 15).map((row, i) => el('tr', rowAttrs(row, i), ...columns.map(c => el('td', { class: [c.numeric ? 'num' : '', c.className || ''].join(' ').trim() }, cell(c, row))))));
       empty.hidden = !!visible.length;
       count.textContent = `${visible.length} registros · Página ${state.page} de ${pages}`;
       prev.disabled = state.page === 1; next.disabled = state.page === pages;
@@ -130,7 +159,7 @@
     input.oninput = () => { state.query = input.value.trim().toLocaleLowerCase('pt-BR'); state.page = 1; draw(); };
     prev.onclick = () => { state.page--; draw(); }; next.onclick = () => { state.page++; draw(); };
     exportBtn.onclick = () => downloadCSV(name, columns.filter(c => c.key), filtered(), context);
-    host.replaceChildren(toolbar, error, el('div', { class: 'tbl-wrap data-table-wrap', tabindex: '0', 'aria-label': `Tabela de ${name}, role para ver todas as colunas` }, table), empty, pager);
+    host.replaceChildren(toolbar, ...(disclosure ? [disclosure] : []), error, el('div',{ class: 'tbl-wrap data-table-wrap', tabindex: '0', 'aria-label': `Tabela de ${name}, role para ver todas as colunas` }, table), empty, pager);
     draw();
   }
   window.CaixaUI = { el, currency, date, badge, notify, dialog, dataTable, downloadCSV };

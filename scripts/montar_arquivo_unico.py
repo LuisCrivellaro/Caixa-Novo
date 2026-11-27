@@ -1,4 +1,4 @@
-"""Gera dist/caixa-novo.html: o site num único arquivo (CSS, JS, logo e dados embutidos).
+"""Gera dist/caixa-novo.html: o site num único arquivo (CSS, JS, logos e dados embutidos).
 Serve para publicar em lugares que aceitam só um HTML, como um artifact do Claude.
 Uso, na raiz do projeto: npm run build (compila o menu e gera este HTML).
 """
@@ -12,8 +12,9 @@ menu_css = (raiz / "assets/generated/branched-menu.css").read_text(encoding="utf
 html = html.replace('<link rel="stylesheet" href="assets/generated/branched-menu.css">', "<style>\n" + menu_css + "</style>")
 menu_js = (raiz / "assets/generated/branched-menu.js").read_text(encoding="utf-8").replace("</script", "<\\/script")
 html = html.replace('<script src="assets/generated/branched-menu.js"></script>', '<script>\n' + menu_js + '\n</script>')
-logo = "data:image/png;base64," + base64.b64encode((raiz / "assets/img/logo-branco.png").read_bytes()).decode()
-html = html.replace("assets/img/logo-branco.png", logo)
+for imagem in ["logo-laranja.png", "favicon.png", "logo-branco.png"]:
+    uri = "data:image/png;base64," + base64.b64encode((raiz / "assets/img" / imagem).read_bytes()).decode()
+    html = html.replace("assets/img/" + imagem, uri)
 fontes = ["contas", "clientes", "receber", "pagar", "lancamentos", "fechamentos"]
 dados = {n: json.loads((raiz / f"dados/{n}.json").read_text(encoding="utf-8")) for n in fontes}
 dados_js = "window.__DADOS__ = " + json.dumps(dados, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"
