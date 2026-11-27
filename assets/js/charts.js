@@ -111,8 +111,11 @@
     el.innerHTML = '';
     const w = Math.max(240, el.clientWidth || 600);
     const s = svg('svg', { viewBox: `0 0 ${w} ${h}`, width: '100%', height: h, role: 'img', style: 'display:block;overflow:visible;font-variant-numeric:tabular-nums' }, el);
+    // Entrada animada só logo depois de uma chamada nova; redesenhos por tamanho ou fonte ficam estáticos.
+    if (el._anim && performance.now() - el._anim < 800) s.classList.add('cn-animate');
     return { s, w, h };
   }
+  const startAnim = (el) => { el._anim = performance.now(); };
   let tooltipSequence = 0;
   function tooltip(el) {
     let t = el.querySelector('.chart-tip');
@@ -360,26 +363,27 @@
       const g = svg('g', {}, s);
       axes(g, el, { w, h, padL, padB, yt, y, labels, x, at: xAt, tick });
       notesUnder(g, el, N, { padT, h, padB });
+      const plot = svg('g', { class: 'cn-reveal' }, g);
       series.forEach((sr, k) => {
         const col = colourOf(sr, k);
         const pts = sr.values.map((v, i) => (v == null ? null : [x(i), y(Math.min(v, yt.at(-1)))]));
         // step: a balance that only changes on given days holds its value until the next one
         const d = pts.reduce((acc, p, i) => (p ? acc + (acc && pts[i - 1] ? (step ? `L${p[0].toFixed(1)} ${pts[i - 1][1].toFixed(1)}L` : 'L') : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1) : acc), '');
-        if (fill && k === 0) { const first = pts.find(Boolean), last = [...pts].reverse().find(Boolean); svg('path', { d: `${d}L${last[0]} ${y(yt[0])}L${first[0]} ${y(yt[0])}Z`, fill: col, opacity: 0.12 }, g); }
+        if (fill && k === 0) { const first = pts.find(Boolean), last = [...pts].reverse().find(Boolean); svg('path', { d: `${d}L${last[0]} ${y(yt[0])}L${first[0]} ${y(yt[0])}Z`, fill: col, opacity: 0.12 }, plot); }
         const made = [];
-        if (today == null) made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g));
+        if (today == null) made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, plot));
         else {
           // a forecast: the line after today is dashed, so a projection never reads as a fact
           const cut = x(today), id = 'c' + k + Math.random().toString(36).slice(2, 8);
           const defs = svg('defs', {}, g);
           const a = svg('clipPath', { id: id + 'a' }, defs); svg('rect', { x: 0, y: 0, width: cut, height: h }, a);
           const b = svg('clipPath', { id: id + 'b' }, defs); svg('rect', { x: cut, y: 0, width: w, height: h }, b);
-          made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round', 'clip-path': 'url(#' + id + 'a)' }, g));
-          made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-dasharray': '5 4', opacity: 0.8, 'clip-path': 'url(#' + id + 'b)' }, g));
+          made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-linejoin': 'round', 'clip-path': 'url(#' + id + 'a)' }, plot));
+          made.push(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 2, 'stroke-dasharray': '5 4', opacity: 0.8, 'clip-path': 'url(#' + id + 'b)' }, plot));
           if (k === 0) { svg('line', { x1: cut, x2: cut, y1: padT, y2: h - padB, stroke: css(el, '--axis-ink', '#6b6b6b'), 'stroke-width': 1, opacity: 0.4 }, g); if (todayBox) text(g, todayLabel, { x: todayBox.x0, y: todayBox.base, 'font-size': TYPE.note, fill: css(el, '--axis-ink', '#6b6b6b') }); }
         }
         // ajuste local: o trecho abaixo de zero ganha negColour (positivo e negativo em cores diferentes)
-        if (negColour && k === 0 && yt[0] < 0) { const y0 = y(0), nid = 'n' + Math.random().toString(36).slice(2, 8); const cp = svg('clipPath', { id: nid }, svg('defs', {}, g)); svg('rect', { x: 0, y: y0, width: w, height: Math.max(0, h - y0) }, cp); const gg = svg('g', { 'clip-path': 'url(#' + nid + ')' }, g); made.forEach((p) => { const c = p.cloneNode(); c.setAttribute('stroke', negColour); gg.appendChild(c); }); }
+        if (negColour && k === 0 && yt[0] < 0) { const y0 = y(0), nid = 'n' + Math.random().toString(36).slice(2, 8); const cp = svg('clipPath', { id: nid }, svg('defs', {}, g)); svg('rect', { x: 0, y: y0, width: w, height: Math.max(0, h - y0) }, cp); const gg = svg('g', { 'clip-path': 'url(#' + nid + ')' }, plot); made.forEach((p) => { const c = p.cloneNode(); c.setAttribute('stroke', negColour); gg.appendChild(c); }); }
         if (endLabel && k === 0) { const li = sr.values.map((v, i) => (v == null ? -1 : i)).filter((i) => i >= 0).at(-1); text(g, format(sr.values[li]), { x: x(li) + 6, y: y(Math.min(sr.values[li], yt.at(-1))) + 4, 'font-size': TYPE.axis, 'font-weight': 600, fill: css(el, '--ink', '#111') }); }
       });
       const labelBoxes = [...g.querySelectorAll('text')].map(node => { const b = node.getBBox(); return { x0: b.x, x1: b.x + b.width, y0: b.y, y1: b.y + b.height }; });
@@ -399,7 +403,7 @@
         }
       });
     };
-    draw(); watch(el, draw); settle(draw, el);
+    startAnim(el); draw(); watch(el, draw); settle(draw, el);
     const lg = series.length > 1 ? legendEl(series.map((sr, k) => ({ label: sr.name, w: 16, draw: (sw) => svg('line', { x1: 0, x2: 16, y1: 6, y2: 6, stroke: colourOf(sr, k), 'stroke-width': 2, 'stroke-dasharray': sr.dash ? '4 3' : null }, sw) })), legend) : null;
     return { legend: lg };
   }
@@ -456,8 +460,9 @@
       for (const it of N.items) if (it.at != null) it.end = y(up[it.at] || 0) - 4;
       labels.forEach((lab, i) => {
         const o = partial === i ? 0.5 : null;
-        if (up[i] > 0) { const r = paintRect(g, { ...(marked(i, 'above') && !markTint ? st.mark : st.above), opacity: marked(i, 'above') && markTint ? 0.4 : o }, x(i) - bw / 2, y(up[i]), bw, Math.max(0, y(0) - y(up[i]) - 1)); titled(r, `${lab}: ${above} ${format(up[i])}`, {}); }
-        if (down[i] > 0) { const r = paintRect(g, { ...(marked(i, 'below') && !markTint ? st.mark : st.below), opacity: marked(i, 'below') && markTint ? 0.4 : o }, x(i) - bw / 2, y(0) + 1, bw, Math.max(0, y(-down[i]) - y(0) - 1)); titled(r, `${lab}: ${below} ${format(down[i])}`, {}); }
+        const anim = (r, side) => { if (r && r.classList) { r.classList.add('cn-bar', 'cn-bar-' + side); r.style.setProperty('--i', String(Math.min(i, 24))); } return r; };
+        if (up[i] > 0) { const r = anim(paintRect(g, { ...(marked(i, 'above') && !markTint ? st.mark : st.above), opacity: marked(i, 'above') && markTint ? 0.4 : o }, x(i) - bw / 2, y(up[i]), bw, Math.max(0, y(0) - y(up[i]) - 1)), 'up'); titled(r, `${lab}: ${above} ${format(up[i])}`, {}); }
+        if (down[i] > 0) { const r = anim(paintRect(g, { ...(marked(i, 'below') && !markTint ? st.mark : st.below), opacity: marked(i, 'below') && markTint ? 0.4 : o }, x(i) - bw / 2, y(0) + 1, bw, Math.max(0, y(-down[i]) - y(0) - 1)), 'down'); titled(r, `${lab}: ${below} ${format(down[i])}`, {}); }
       });
       svg('line', { x1: padL, x2: w, y1: y(0), y2: y(0), stroke: ink, 'stroke-width': 1, opacity: 0.8, 'shape-rendering': 'crispEdges' }, g);
       references(g, el, reference, { y, padL, w, boxes: labels.map((_, i) => ({ x0: x(i) - bw / 2, x1: x(i) + bw / 2, y0: y(up[i]), y1: y(-down[i]) })) });
@@ -469,7 +474,7 @@
         onPoint: i => { guide.setAttribute('opacity', i == null ? 0 : .35); if (i != null) { guide.setAttribute('x1', x(i)); guide.setAttribute('x2', x(i)); } }
       });
     };
-    draw(); watch(el, draw); settle(draw, el);
+    startAnim(el); draw(); watch(el, draw); settle(draw, el);
     const items = [];
     if (up.some((v) => v > 0)) items.push({ label: above, draw: rectSwatch(st.above) });
     if (down.some((v) => v > 0)) items.push({ label: below, draw: rectSwatch(st.below) });
@@ -498,11 +503,11 @@
       const a = document.createElement('span'); a.textContent = r.label; a.title = r.label; a.style.cssText = 'position:relative;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
       const b = document.createElement('span'); b.textContent = format(r.value); b.style.cssText = 'font-weight:500;text-align:right';
       if (thin) {
-        const bar = document.createElement('span'); bar.style.cssText = `grid-column:1 / -1;height:2px;margin-top:4px;width:${(r.value / max) * 100}%;background:${k === 0 || all ? colour || 'var(--ink,#111)' : 'var(--chart-muted,#c9c9c9)'}`;
+        const bar = document.createElement('span'); bar.className = 'cn-fill'; bar.style.cssText = `--i:${Math.min(k, 16)};grid-column:1 / -1;height:2px;margin-top:4px;width:${(r.value / max) * 100}%;background:${k === 0 || all ? colour || 'var(--ink,#111)' : 'var(--chart-muted,#c9c9c9)'}`;
         li.append(a, b, bar);
       } else {
         const track = document.createElement('span'); track.style.cssText = 'position:relative;padding:10px 12px;border-radius:6px;isolation:isolate;min-width:0';
-        const bar = document.createElement('span'); bar.style.cssText = `position:absolute;inset:0 auto 0 0;width:${(r.value / max) * 100}%;background:${colour || 'var(--bar-fill, color-mix(in srgb, var(--chart-1, #2f6fdf) 12%, transparent))'};border-radius:inherit;z-index:-1`;
+        const bar = document.createElement('span'); bar.className = 'cn-fill'; bar.style.cssText = `--i:${Math.min(k, 16)};position:absolute;inset:0 auto 0 0;width:${(r.value / max) * 100}%;background:${colour || 'var(--bar-fill, color-mix(in srgb, var(--chart-1, #2f6fdf) 12%, transparent))'};border-radius:inherit;z-index:-1`;
         track.append(bar, a); li.append(track, b);
       }
       list.appendChild(li);

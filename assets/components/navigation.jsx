@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -27,8 +27,29 @@ const publish = next => {
 
 function Navigation() {
   const { active, badge } = useSyncExternalStore(subscribe, snapshot);
+  const navRef = useRef(null);
+  const inkRef = useRef(null);
+  // O realce desliza até a página ativa; na primeira pintura ele só aparece no lugar.
+  useLayoutEffect(() => {
+    const nav = navRef.current, ink = inkRef.current;
+    if (!nav || !ink) return undefined;
+    const place = (glide) => {
+      const link = nav.querySelector('a[aria-current="page"]');
+      if (!link) { ink.removeAttribute('data-on'); return; }
+      if (!glide) ink.style.transition = 'none';
+      ink.style.transform = `translateY(${link.offsetTop}px)`;
+      ink.style.height = `${link.offsetHeight}px`;
+      ink.setAttribute('data-on', '');
+      if (!glide) { void ink.offsetHeight; ink.style.transition = ''; }
+    };
+    place(ink.hasAttribute('data-on'));
+    const ro = new ResizeObserver(() => place(false));
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, [active, badge]);
   return (
-    <nav className="nav" aria-label="Páginas">
+    <nav className="nav" aria-label="Páginas" ref={navRef}>
+      <span className="nav-ink" ref={inkRef} aria-hidden="true" />
       {pages.map(page => (
         <a key={page.value} href={`#${page.value}`} data-view={page.value} aria-current={page.value === active ? 'page' : undefined}>
           <HugeiconsIcon icon={page.icon} size={18} strokeWidth={1.7} aria-hidden="true" />

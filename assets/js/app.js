@@ -89,10 +89,12 @@
     return el;
   };
   const forte = (v, txt) => h('strong', { class: sinal(v) || null, text: txt });
-  const kpi = (label, value, sub, opts = {}) => h('div', { class: opts.lead ? 'strip-lead' : null },
+  // opts.href deixa o indicador inteiro clicável, levando ao detalhe correspondente.
+  const kpi = (label, value, sub, opts = {}) => h('div', { class: [opts.lead ? 'strip-lead' : '', opts.href ? 'kpi-link' : ''].join(' ').trim() || null },
     h('span', { class: 'kpi-label', text: label }),
     h('span', { class: 'kpi-value' + (opts.cls ? ' ' + opts.cls : ''), text: value }),
-    sub ? (sub.nodeType ? sub : h('span', { class: 'kpi-sub', text: sub })) : null);
+    sub ? (sub.nodeType ? sub : h('span', { class: 'kpi-sub', text: sub })) : null,
+    opts.href ? h('a', { class: 'kpi-hit', href: opts.href, 'aria-label': `${label}, ${value}: ${opts.hint || 'ver detalhes'}` }, h('span', { class: 'kpi-arrow', 'aria-hidden': 'true', text: '→' })) : null);
   const safe = (box, fn) => {
     try { fn(); } catch (e) {
       console.error(e);
@@ -135,10 +137,10 @@
   function renderGeral() {
     const res = get('resumo'), p30 = get('projecao_marcos').find((m) => m.marco === '30');
     $('#g-strip').replaceChildren(
-      kpiM('Saldo disponível', brl(R(res, 'saldo_disponivel')), `${int(get('saldo_contas').length)} contas`, { cls: sinal(R(res, 'saldo_disponivel')), calc: ['resumo'] }),
-      kpiM('Total a receber', brlS(R(res, 'receber_aberto')), 'Títulos em aberto', { cls: sinal(R(res, 'receber_aberto')), calc: ['resumo'] }),
-      kpiM('Total a pagar', brlS(-R(res, 'pagar_aberto')), 'Títulos em aberto', { cls: sinal(-R(res, 'pagar_aberto')), calc: ['resumo'] }),
-      kpiM('Saldo projetado em 30 dias', brl(p30.saldo), 'Só com títulos já lançados', { cls: sinal(p30.saldo), calc: ['projecao_marcos'] }));
+      kpiM('Saldo disponível', brl(R(res, 'saldo_disponivel')), `${int(get('saldo_contas').length)} contas`, { cls: sinal(R(res, 'saldo_disponivel')), calc: ['resumo'], href: '#tesouraria/contas', hint: 'ver saldos por conta' }),
+      kpiM('Total a receber', brlS(R(res, 'receber_aberto')), 'Títulos em aberto', { cls: sinal(R(res, 'receber_aberto')), calc: ['resumo'], href: '#receber/abertos', hint: 'ver títulos a receber' }),
+      kpiM('Total a pagar', brlS(-R(res, 'pagar_aberto')), 'Títulos em aberto', { cls: sinal(-R(res, 'pagar_aberto')), calc: ['resumo'], href: '#pagar/abertos', hint: 'ver títulos a pagar' }),
+      kpiM('Saldo projetado em 30 dias', brl(p30.saldo), 'Só com títulos já lançados', { cls: sinal(p30.saldo), calc: ['projecao_marcos'], href: '#fluxo', hint: 'ver fluxo de caixa' }));
     drawGeralChart();
     drawAlertas();
   }
@@ -255,10 +257,10 @@
 
   // ------- CONTAS A RECEBER E A PAGAR -------
   function stripTitulos(alvo, tipo) {
-    const t = TR(tipo), s = tipo === 'A receber' ? 1 : -1, calc = ['titulos_resumo'];
+    const t = TR(tipo), s = tipo === 'A receber' ? 1 : -1, calc = ['titulos_resumo'], base = s > 0 ? '#receber/' : '#pagar/';
     $(alvo).replaceChildren(
-      kpiM('Em aberto', brlS(s * t.aberto_centavos / 100), `${int(t.abertos_qtd)} ${t.abertos_qtd === 1 ? 'título' : 'títulos'}`, { cls: sinal(s * t.aberto_centavos), calc }),
-      kpiM('Vencido', s > 0 ? brl(t.vencido_centavos / 100) : brlS(-t.vencido_centavos / 100), `${int(t.vencido_qtd)} ${t.vencido_qtd === 1 ? 'título' : 'títulos'}`, { cls: t.vencido_centavos ? 'neg' : '', calc }),
+      kpiM('Em aberto', brlS(s * t.aberto_centavos / 100), `${int(t.abertos_qtd)} ${t.abertos_qtd === 1 ? 'título' : 'títulos'}`, { cls: sinal(s * t.aberto_centavos), calc, href: base + 'abertos', hint: 'filtrar títulos em aberto' }),
+      kpiM('Vencido', s > 0 ? brl(t.vencido_centavos / 100) : brlS(-t.vencido_centavos / 100), `${int(t.vencido_qtd)} ${t.vencido_qtd === 1 ? 'título' : 'títulos'}`, { cls: t.vencido_centavos ? 'neg' : '', calc, href: base + 'vencidos', hint: 'filtrar títulos vencidos' }),
       kpiM('A vencer em 7 dias', brlS(s * t.proximos_7_centavos / 100), 'De hoje até 7 dias', { cls: sinal(s * t.proximos_7_centavos), calc }));
   }
   function renderReceber(sub) {
@@ -834,12 +836,14 @@
     if (view === 'receber' && arg === 'vencidos') { workspace.filtrarTitulos('A receber', { situacao: 'Vencido' }); arg = 'titulos'; }
     if (view === 'receber' && arg === 'limite') { workspace.filtrarClientes({ situacao_cliente: 'limite' }); arg = 'clientes'; }
     if (view === 'pagar' && arg === 'vencidos') { workspace.filtrarTitulos('A pagar', { situacao: 'Vencido' }); arg = 'titulos'; }
+    if ((view === 'receber' || view === 'pagar') && arg === 'abertos') { workspace.filtrarTitulos(view === 'receber' ? 'A receber' : 'A pagar', { situacao: 'aberto' }); arg = 'titulos'; }
     const subs = SUBS[view];
     const sub = subs ? (subs.includes(arg) ? arg : subs[0]) : null;
     $$('main > .view').forEach((s) => { s.hidden = s.id !== view; });
     if (subs) {
       $$(`#${view} [data-panel]`).forEach((p) => { p.hidden = p.dataset.panel !== sub; });
       $$(`#${view} .subnav a`).forEach((a) => { if (a.dataset.sub === sub) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+      requestAnimationFrame(() => placeSubnavInk($(`#${view} .subnav`), atual === view));
     }
     window.CaixaMenu.setActive(view);
     $$('a.settings-link').forEach((a) => { if (view === 'configuracoes') a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
@@ -851,6 +855,24 @@
     atual = view;
   }
   window.addEventListener('hashchange', route);
+  // Realce das abas internas: desliza entre abas da mesma página e aparece no lugar ao chegar nela.
+  function placeSubnavInk(nav, glide) {
+    if (!nav) return;
+    let ink = nav.querySelector('.subnav-ink');
+    if (!ink) { ink = h('span', { class: 'subnav-ink', 'aria-hidden': 'true' }); nav.append(ink); }
+    const link = nav.querySelector('a[aria-current="page"]');
+    if (!link) return;
+    if (!glide) ink.style.transition = 'none';
+    ink.style.transform = `translateX(${link.offsetLeft}px)`;
+    ink.style.width = `${link.offsetWidth}px`;
+    if (!glide) { void ink.offsetWidth; ink.style.transition = ''; }
+  }
+  window.addEventListener('resize', () => { if (atual) placeSubnavInk($(`#${atual} .subnav`), false); });
+  // Um indicador clicado de novo reaplica o filtro, mesmo com o endereço igual.
+  document.addEventListener('click', (e) => {
+    const hit = e.target.closest('.kpi-hit');
+    if (hit && hit.hash === location.hash && !e.ctrlKey && !e.metaKey) { e.preventDefault(); route(); }
+  });
 
   // ------- CONTROLES -------
   $('#g-alerts-more').addEventListener('click', () => { alertasTodos = !alertasTodos; drawAlertas(); });

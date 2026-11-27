@@ -460,3 +460,97 @@ main:focus { outline: none; }
   .accounts .btn-text { grid-column: 1 / -1; justify-self: start; padding-left: 0; }
   .accounts-total > span:last-child { display: none; }
 }
+
+/* Movimento: entradas de tela, gráficos, menu, abas e detalhes. Tudo é desligado com prefers-reduced-motion. */
+:root { --ease-out: cubic-bezier(0.22, 1, 0.36, 1); --t-enter: 420ms; }
+@keyframes cn-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes cn-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cn-slide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+@keyframes cn-pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes cn-toast { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes cn-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes cn-grow-y { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes cn-grow-x { from { transform: scaleX(0); } to { transform: none; } }
+
+/* Ao abrir uma página, os blocos sobem em sequência. */
+.view { transition: none; }
+.view:not([hidden]) > * { animation: cn-rise var(--t-enter) var(--ease-out) both; }
+.view:not([hidden]) > :nth-child(2) { animation-delay: 60ms; }
+.view:not([hidden]) > :nth-child(3) { animation-delay: 120ms; }
+.view:not([hidden]) > :nth-child(4) { animation-delay: 180ms; }
+.view:not([hidden]) > :nth-child(5) { animation-delay: 240ms; }
+.view:not([hidden]) > :nth-child(n+6) { animation-delay: 300ms; }
+.view [data-panel]:not([hidden]) { animation: cn-rise 340ms var(--ease-out) both; }
+.data-banner { animation: cn-fade 500ms ease-out both; }
+
+/* Indicadores entram um a um; os clicáveis mostram a seta e levam ao detalhe. */
+.kpis { overflow: hidden; }
+.kpis > div { animation: cn-rise 460ms var(--ease-out) both; animation-delay: 80ms; }
+.kpis > div:nth-child(2) { animation-delay: 150ms; }
+.kpis > div:nth-child(3) { animation-delay: 220ms; }
+.kpis > div:nth-child(4) { animation-delay: 290ms; }
+.kpi-link { transition: background-color 200ms var(--ease-out); }
+.kpi-hit { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.kpi-hit:focus-visible { outline-offset: -3px; }
+.kpi-arrow { position: absolute; top: 14px; right: 16px; color: var(--brand-ink); font-weight: 600; opacity: 0; transform: translateX(-6px); transition: opacity 200ms var(--ease-out), transform 240ms var(--ease-out); }
+.kpi-link:focus-within .kpi-arrow { opacity: 1; transform: none; }
+.kpi-link .kpi-value { transition: transform 240ms var(--ease-out); transform-origin: right center; }
+
+/* Alertas deslizam em sequência. */
+.alerts li { animation: cn-slide 380ms var(--ease-out) both; animation-delay: 160ms; }
+.alerts li:nth-child(2) { animation-delay: 230ms; }
+.alerts li:nth-child(3) { animation-delay: 300ms; }
+.alerts li:nth-child(n+4) { animation-delay: 60ms; }
+.alerts li { transition: transform 200ms var(--ease-out), background-color 200ms var(--ease-out); }
+
+/* Gráficos: a linha se desenha da esquerda para a direita e as barras crescem a partir do zero. */
+.cn-animate .cn-reveal { animation: cn-reveal 1000ms var(--ease-out) 120ms both; }
+.cn-animate .cn-bar { transform-box: fill-box; animation: cn-grow-y 560ms var(--ease-out) both; animation-delay: calc(100ms + var(--i, 0) * 24ms); }
+.cn-animate .cn-bar-up { transform-origin: 50% 100%; }
+.cn-animate .cn-bar-down { transform-origin: 50% 0%; }
+.cn-fill { transform-origin: 0 50%; animation: cn-grow-x 640ms var(--ease-out) both; animation-delay: calc(140ms + var(--i, 0) * 45ms); }
+
+/* Menu: o realce desliza até a página ativa. */
+.nav { position: relative; }
+.nav a { position: relative; z-index: 1; }
+.nav a[aria-current="page"] { background: transparent; box-shadow: none; }
+.nav-ink { position: absolute; left: 0; right: 0; top: 0; height: 36px; border-radius: var(--r-inner); background: var(--active); box-shadow: inset 2px 0 var(--brand-ink); opacity: 0; pointer-events: none; z-index: 0; transition: transform 340ms var(--ease-out), height 340ms var(--ease-out), opacity 200ms ease-out; }
+.nav-ink[data-on] { opacity: 1; }
+.nav a svg { transition: transform 220ms var(--ease-out), color 200ms ease-out; }
+.nav-count { animation: cn-pop 300ms var(--ease-out) both; }
+
+/* Abas internas: a linha laranja desliza entre as abas. */
+.subnav { position: relative; }
+.subnav a[aria-current="page"] { border-bottom-color: transparent; }
+.subnav-ink { position: absolute; left: 0; bottom: -1px; height: 2px; width: 0; border-radius: 2px; background: var(--brand-ink); pointer-events: none; transition: transform 320ms var(--ease-out), width 320ms var(--ease-out); }
+
+/* Tabelas: linhas entram em cascata curta; as que abrem detalhes são clicáveis por inteiro. */
+tbody tr { animation: cn-fade 260ms ease-out both; animation-delay: calc(var(--i, 0) * 18ms); }
+tr.row-link { cursor: pointer; }
+.entry-detail { transition: color 160ms ease-out; }
+
+/* Detalhes, filtros extras, diálogos e avisos. */
+details[open] > :not(summary) { animation: cn-rise 320ms var(--ease-out) both; }
+.dialog[open] { animation: cn-pop 280ms var(--ease-out) both; }
+.dialog[open]::backdrop { animation: cn-fade 280ms ease-out both; }
+.notification:not([hidden]) { animation: cn-toast 280ms var(--ease-out) both; }
+.btn { transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out), border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out); }
+
+/* Troca de tema suave. */
+body, .side, .card, .strip, .data-banner, .topbar { transition: background-color 300ms ease, border-color 300ms ease, color 300ms ease; }
+
+@media (hover: hover) and (pointer: fine) {
+  .kpi-link:hover { background: var(--row-hover); }
+  .kpi-link:hover .kpi-arrow { opacity: 1; transform: none; }
+  .kpi-link:hover .kpi-value { transform: scale(1.02); }
+  .alerts li:hover { transform: translateX(3px); }
+  .nav a:hover svg { transform: translateX(2px); }
+  .nav a[aria-current="page"] svg { transform: none; }
+  tr.row-link:hover .entry-detail { color: var(--brand-ink); text-decoration: underline; text-underline-offset: 3px; }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px color-mix(in srgb, var(--brand-ink) 25%, transparent); }
+  .btn-ghost:hover:not(:disabled) { transform: translateY(-1px); }
+}
+@media (max-width: 900px) { .nav-ink { height: 44px; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0ms !important; }
+}

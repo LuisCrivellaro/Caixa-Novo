@@ -149,7 +149,9 @@
         if (!c.action || !onOpen) return content;
         return el('button', { type: 'button', class: 'entry-detail', title: 'Ver detalhes', onclick: () => onOpen(row) }, content);
       };
-      body.replaceChildren(...visible.slice((state.page - 1) * 15, state.page * 15).map(row => el('tr', {}, ...columns.map(c => el('td', { class: [c.numeric ? 'num' : '', c.className || ''].join(' ').trim() }, cell(c, row))))));
+      // Com detalhes disponíveis, a linha inteira abre o registro; o botão da primeira coluna segue para teclado e leitores de tela.
+      const rowAttrs = (row, i) => ({ class: onOpen ? 'row-link' : null, style: `--i:${i}`, onclick: onOpen ? e => { if (!e.target.closest('button, a, input, select') && !getSelection().toString()) onOpen(row); } : null });
+      body.replaceChildren(...visible.slice((state.page - 1) * 15, state.page * 15).map((row, i) => el('tr', rowAttrs(row, i), ...columns.map(c => el('td', { class: [c.numeric ? 'num' : '', c.className || ''].join(' ').trim() }, cell(c, row))))));
       empty.hidden = !!visible.length;
       count.textContent = `${visible.length} registros · Página ${state.page} de ${pages}`;
       prev.disabled = state.page === 1; next.disabled = state.page === pages;

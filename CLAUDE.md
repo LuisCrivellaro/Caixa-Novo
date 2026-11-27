@@ -15,7 +15,7 @@ Caixa Novo: painel interno de caixa da Mundo Novo (distribuidora de frutas, Rond
 - Toda lista e tabela precisa de estado vazio; todo controle precisa de foco visível.
 - Número positivo em verde, negativo em vermelho, zero sem cor (classes `pos` e `neg`). Exceção: valor vencido fica vermelho.
 - Importação nunca aplica sem a conferência de colunas; dados importados vivem no localStorage com a chave `mn-fonte-<fonte>`.
-- Movimento curto (150 a 200 ms, ease-out) e só em resposta a uma ação; respeitar prefers-reduced-motion.
+- Movimento com ease-out: interações de 150 a 250 ms; entradas de página, gráficos e listas em cascata de até cerca de 1 s, só ao abrir a tela (redesenho por tamanho fica estático). Nunca animar valores financeiros (sem contagem progressiva). Tudo some com prefers-reduced-motion; as regras ficam no bloco "Movimento" do fim de `styles.css`.
 
 ## Skills locais de frontend
 
